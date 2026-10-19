@@ -1,0 +1,159 @@
+/* Shared styles for the explorer pages.
+   Colors are role tokens so the light and dark themes switch in one place.
+   Series colors are the first four slots of a categorical palette that was checked
+   for color-vision-deficiency separation in both themes. */
+
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --link: #256abf;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --link: #6da7ec;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+a { color: var(--link); }
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.site-header .inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: baseline;
+}
+.site-title { font-weight: 650; color: var(--ink); text-decoration: none; }
+.site-nav { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+.site-nav a { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
+.site-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; text-decoration: none; }
+.site-nav a:not([aria-current="page"]):hover { text-decoration-thickness: 2px; }
+
+main { max-width: 1100px; margin: 0 auto; padding: 28px 16px 56px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; font-weight: 650; }
+h2 { font-size: 20px; margin: 36px 0 8px; font-weight: 650; }
+.lede { color: var(--ink-2); max-width: 70ch; margin: 0 0 20px; }
+p { max-width: 75ch; }
+
+/* Filter row: one row above the chart, wraps on narrow screens. */
+.controls { display: flex; flex-wrap: wrap; gap: 14px 28px; margin: 0 0 16px; }
+.controls fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.controls legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.options { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+
+/* Segmented single-choice control. */
+.seg { gap: 0; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; width: max-content; max-width: 100%; }
+.seg label { position: relative; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: block; padding: 5px 12px; font-size: 14px; color: var(--ink-2); border-left: 1px solid var(--axis); }
+.seg label:first-child span { border-left: 0; }
+.seg input:checked + span { background: var(--ink); color: var(--surface); }
+.seg input:focus-visible + span { outline: 2px solid var(--link); outline-offset: -2px; }
+
+/* Multi-choice control whose swatch doubles as the chart legend key. */
+.checks label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.checks input { margin: 0; accent-color: var(--ink); }
+.checks svg { flex: none; }
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 8px 4px;
+}
+#chart { width: 100%; min-height: 420px; }
+.summary { margin: 12px 0 0; color: var(--ink-2); font-size: 14px; max-width: none; }
+.notice {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-2);
+}
+code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--grid); padding: 1px 5px; border-radius: 4px; }
+
+details { margin: 20px 0 0; border-top: 1px solid var(--border); padding-top: 12px; }
+summary { cursor: pointer; font-weight: 600; }
+details > :not(summary) { margin-top: 12px; }
+ul.notes { padding-left: 20px; max-width: 75ch; }
+ul.notes li { margin: 0 0 8px; }
+
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Landing page cards. */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 0; list-style: none; margin: 16px 0 0; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.card h3 { margin: 0 0 6px; font-size: 17px; }
+.card p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.card.pending { background: transparent; border-style: dashed; }
+.card.pending h3 { color: var(--ink-2); }
+.card a.stretch { color: inherit; text-decoration: none; }
+.card a.stretch:hover h3 { text-decoration: underline; }
+.tag { display: inline-block; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+
+blockquote.citation {
+  margin: 12px 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--axis);
+  color: var(--ink-2);
+  max-width: 75ch;
+}
+
+@media (max-width: 600px) {
+  h1 { font-size: 24px; }
+  #chart { min-height: 360px; }
+}
+
+/* Wide tables keep the row label visible while scrolling horizontally. */
+#table th:first-child, #table td:first-child { position: sticky; left: 0; background: var(--page); }

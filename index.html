@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battery aging explorer</title>
+<meta name="description" content="Interactive views of capacity fade and impedance of 228 NMC/C-SiO cells aged under calendar, cyclic and driving-profile conditions.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <span class="site-title">Battery aging explorer</span>
+    <nav class="site-nav" aria-label="Views">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="capacity.html">Capacity fade</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1>Battery aging explorer</h1>
+  <p class="lede">
+    Interactive views of how 228 lithium-ion cells aged over up to nearly 20 months of calendar, cyclic and driving-profile testing,
+    built from a public dataset of periodic check-up measurements.
+  </p>
+
+  <h2>Views</h2>
+  <ul class="cards">
+    <li class="card">
+      <a class="stretch" href="capacity.html">
+        <h3>Capacity fade</h3>
+        <p>Discharge capacity at every check-up, filtered by aging type, temperature and operating condition, with the 80% point of each cell.</p>
+      </a>
+    </li>
+    <li class="card pending">
+      <h3>Impedance</h3>
+      <p>R0 (ohmic) and R1 (from the real-axis intercept to the minimum-phase point) from impedance spectra against aging, plus Nyquist plots of individual spectra.</p>
+      <span class="tag">In progress</span>
+    </li>
+  </ul>
+
+  <h2 id="about">About the data</h2>
+  <p>
+    The cells are LG INR18650HG2 cylindrical cells (nickel-rich NMC cathode, C-SiO anode). The experiment comprises
+    76 aging conditions with three cells each, held at 0, 10, 25 or 40 °C:
+  </p>
+  <ul class="notes">
+    <li><strong>Calendar aging:</strong> cells rest at a fixed state of charge.</li>
+    <li><strong>Cyclic aging:</strong> cells are charged and discharged continuously at set rates and voltage limits.</li>
+    <li><strong>Profile aging:</strong> cells follow a driving profile derived from the WLTP Class 3b cycle.</li>
+  </ul>
+  <p>
+    Periodically each cell goes through a check-up: a capacity measurement at room temperature, electrochemical impedance
+    spectroscopy at five states of charge, and current-pulse resistance measurements. The pages here show the capacity and
+    impedance results; the pulse measurements and the continuous cycling data are not used.
+  </p>
+  <p>
+    The raw result files are reduced to compact JSON by <code>scripts/preprocess.py</code>, which selects the check-up values,
+    numbers the check-ups, computes equivalent full cycles and interpolates the 80% capacity point. The pages read only those JSON files in the browser.
+  </p>
+
+  <h2>Source and license</h2>
+  <blockquote class="citation">
+    M. Luh and T. Blank, <em>Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell</em>
+    (version 2: result data), RADAR4KIT, 2024,
+    <a href="https://doi.org/10.35097/1969">doi:10.35097/1969</a>.
+  </blockquote>
+  <p>
+    The dataset is licensed <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Its measurement setup and the first
+    version of the data are described in M. Luh and T. Blank, <em>Scientific Data</em>, 2024,
+    <a href="https://doi.org/10.1038/s41597-024-03831-x">doi:10.1038/s41597-024-03831-x</a>.
+    The values shown here are derived from the dataset by selection, aggregation and interpolation, and any errors in that processing are not the dataset authors'.
+  </p>
+</main>
+</body>
+</html>
