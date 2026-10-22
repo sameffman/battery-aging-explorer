@@ -157,3 +157,17 @@ blockquote.citation {
 
 /* Wide tables keep the row label visible while scrolling horizontally. */
 #table th:first-child, #table td:first-child { position: sticky; left: 0; background: var(--page); }
+
+/* Impedance page: cell picker and the check-up ramp key under the Nyquist plot. */
+.controls select {
+  font: inherit;
+  font-size: 14px;
+  padding: 5px 8px;
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ramp { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+.ramp[hidden] { display: none; }
+.ramp-bar { flex: 0 1 220px; height: 8px; border-radius: 4px; }

@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Build the small JSON files the widgets load, from the KIT aging dataset (v2).
+"""Build the small JSON files the pages load, from the KIT aging dataset (v2).
 
 Reads  data/raw/cell_eocv2, cell_eisv2   (semicolon-separated CSVs)
-Writes data/processed/conditions.json, capacity.json, eis_r.json, impedance/<cell>.json
+Writes data/processed/:
+  conditions.json          {cell: aging condition, flags, n_cu, last_cu}
+  capacity.json            {cell: {cu: [values per check-up], q_ref, eol80_initial, eol80_nominal}}
+  eis_r.json               {cell: [[cu, soc, rt, r0, r1, knee_Hz], ...]}
+  impedance/<cell>.json    [{cu, soc, rt, f, re, im}, ...], one entry per spectrum
+rt is 1 for a spectrum measured at room temperature and 0 for one measured at operating (aging)
+temperature, as in the dataset's is_rt column.
 
 Run from anywhere:  python3 scripts/preprocess.py
 Standard library only. Column meanings: 'Data Structure v05.3.xlsx' in the dataset.
@@ -43,29 +49,49 @@ Conventions used (each one is stated here so it can be checked):
       Phase = atan2(Im, Re) of the stored values. The dataset stores the imaginary part with its
       sign inverted (positive = capacitive), so Im here is that stored value.
 """
-import argparse, csv, json, math, os, re, sys
+import argparse
+import csv
+import json
+import math
+import re
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 NOMINAL_AH = 3.0
 EOL_FRACTION = 0.8
 THRESHOLD_AH = EOL_FRACTION * NOMINAL_AH
-LAST_REGULAR_CU = 28   # CU 29 is the extra manual check-up
-R0_FREQ_RANGE = (200.0, 3300.0)   # Hz, where the real-axis crossing is searched
-R1_FREQ_MAX = 33.0                # Hz, upper end of the knee search (everything below is searched)
-R1_MIN_POINTS_BELOW = 2           # points at lower frequency than a dip needed to call it a knee
-PLACEHOLDER_CONDITION = "000"     # P000: header-only files, no cell
-AGE_TYPES = {"1": "calendar", "2": "cyclic", "3": "profile"}
+LAST_REGULAR_CU = 28                # the regular check-ups are CU 1 to 28
+MANUAL_CU = 29                      # the extra manual check-up at the end of the experiment
+CYC_REGULAR = 1                     # cyc_condition of regular aging cycles
+CYC_CHECKUP = 2                     # cyc_condition of check-up capacity runs
+MIN_SPECTRUM_POINTS = 5             # spectra with fewer valid points are dropped
+R0_FREQ_RANGE = (200.0, 3300.0)     # Hz, where the real-axis crossing is searched
+R1_FREQ_MAX = 33.0                  # Hz, upper end of the knee search (everything below is searched)
+R1_MIN_POINTS_BELOW = 2             # points at lower frequency than a dip needed to call it a knee
+PLACEHOLDER_CONDITION = "000"       # P000: header-only files, no cell
+AGE_TYPES = {1: "calendar", 2: "cyclic", 3: "profile"}
 FOLDERS = {"eoc": "cell_eocv2", "eis": "cell_eisv2"}
 FILE_RE = re.compile(r"cell_(?:eocv2|eisv2)_P(\d{3})_(\d)_S(\d+)_C(\d+)\.csv$")
 
 
 def num(s):
+    """float from text, or None if it is empty, not a number, or NaN."""
     try:
         v = float(s)
     except (TypeError, ValueError):
         return None
     return None if math.isnan(v) else v
+
+
+def to_int(s):
+    """int from text that may be written like '25' or '25.0000'."""
+    return int(float(s))
+
+
+def round_opt(v, digits):
+    """round(v, digits), passing None through."""
+    return None if v is None else round(v, digits)
 
 
 def cell_files(raw):
@@ -89,40 +115,47 @@ def cell_files(raw):
 
 
 def read_rows(path):
+    """Rows of a semicolon-separated CSV file as dicts, sorted by timestamp_s."""
     with open(path, newline="") as f:
         rows = list(csv.DictReader(f, delimiter=";"))
     rows.sort(key=lambda r: float(r["timestamp_s"]))
     return rows
 
 
-def to_int(s):
-    """int from text that may be written like '25' or '25.0000'."""
-    return int(float(s))
+def aging_condition(rows):
+    """Aging condition of one cell, read from its regular-cycling rows (or its first row if it has none).
 
+    Rates and voltage targets are the most common value over those rows.
+    """
+    regular = [r for r in rows if to_int(r["cyc_condition"]) == CYC_REGULAR]
+    ref = regular[0] if regular else rows[0]
 
-def r3(v, n=3):
-    return None if v is None else round(v, n)
+    def mode(key):
+        return Counter(r[key] for r in regular).most_common(1)[0][0] if regular else ref[key]
 
-
-def build_capacity(rows):
-    """-> (conditions entry, capacity entry, {cu: start_timestamp})"""
-    t0 = float(rows[0]["timestamp_s"])
-    reg = [r for r in rows if to_int(r["cyc_condition"]) == 1]
-    ref = reg[0] if reg else rows[0]
-    mode = lambda key: Counter(r[key] for r in reg).most_common(1)[0][0] if reg else ref[key]
-    cond = {
-        "age_type": AGE_TYPES.get(str(to_int(ref["age_type"])), "unknown"),
+    age = AGE_TYPES.get(to_int(ref["age_type"]), "unknown")
+    return {
+        "age_type": age,
         "temp_C": to_int(ref["age_temp"]),
-        "soc_pct": to_int(ref["age_soc"]) if to_int(ref["age_type"]) == 1 else None,
-        "chg_rate_C": float(mode("age_chg_rate")) if to_int(ref["age_type"]) != 1 else None,
-        "dischg_rate_C": float(mode("age_dischg_rate")) if to_int(ref["age_type"]) != 1 else None,
-        "profile": to_int(ref["age_profile"]) if to_int(ref["age_type"]) == 3 else None,
-        "v_max_V": r3(num(mode("v_max_target_V")), 3),
-        "v_min_V": r3(num(mode("v_min_target_V")), 3),
+        "soc_pct": to_int(ref["age_soc"]) if age == "calendar" else None,
+        "chg_rate_C": float(mode("age_chg_rate")) if age != "calendar" else None,
+        "dischg_rate_C": float(mode("age_dischg_rate")) if age != "calendar" else None,
+        "profile": to_int(ref["age_profile"]) if age == "profile" else None,
+        "v_max_V": round_opt(num(mode("v_max_target_V")), 3),
+        "v_min_V": round_opt(num(mode("v_min_target_V")), 3),
     }
+
+
+def checkup_values(rows):
+    """Collect the values of each check-up from the check-up capacity runs.
+
+    Returns {cu: values}. "start" is the earliest row time of the check-up and "ts" the earliest time
+    of a valid capacity (None if there is none), both as timestamp_s. "q_chg", "q_dis" (Ah) and "efc"
+    are present when a valid row provided them.
+    """
     per_cu = {}
     for r in rows:
-        if to_int(r["cyc_condition"]) != 2:
+        if to_int(r["cyc_condition"]) != CYC_CHECKUP:
             continue
         ts = float(r["timestamp_s"])
         cu = to_int(r["num_cycles_checkup"]) + 1
@@ -139,13 +172,24 @@ def build_capacity(rows):
         qc, qd = num(r["total_q_chg_sum_Ah"]), num(r["total_q_dischg_sum_Ah"])
         if qc is not None and qd is not None:
             d["efc"] = (qc + qd) / 2 / NOMINAL_AH
-        d["t_C"] = num(r["t_start_degC"])
+    return per_cu
+
+
+def build_capacity(rows):
+    """Condition entry and capacity entry of one cell, and the start time of each check-up.
+
+    Returns (condition, capacity, {cu: start_timestamp}). The start times assign impedance
+    spectra to check-ups.
+    """
+    t0 = float(rows[0]["timestamp_s"])
+    cond = aging_condition(rows)
+    per_cu = checkup_values(rows)
     cus = []
     for cu in sorted(per_cu):
         d = per_cu[cu]
         ts = d["ts"] if d["ts"] is not None else d["start"]
-        cus.append({"cu": cu, "days": r3((ts - t0) / 86400, 2), "efc": r3(d.get("efc"), 1),
-                    "q_dis": r3(d.get("q_dis"), 4), "q_chg": r3(d.get("q_chg"), 4)})
+        cus.append({"cu": cu, "days": round_opt((ts - t0) / 86400, 2), "efc": round_opt(d.get("efc"), 1),
+                    "q_dis": round_opt(d.get("q_dis"), 4), "q_chg": round_opt(d.get("q_chg"), 4)})
     ref_pt = reference_capacity(cus)
     cap = {
         "cu": cus,
@@ -157,7 +201,7 @@ def build_capacity(rows):
     last = cus[-1]["cu"] if cus else 0
     if last < LAST_REGULAR_CU:
         flags.append("ends_early")
-    if any(c["cu"] == 29 for c in cus):
+    if any(c["cu"] == MANUAL_CU for c in cus):
         flags.append("has_manual_cu29")
     if cap["eol80_initial"] is None and cus:
         flags.append("never_below_80pct_of_initial")
@@ -197,6 +241,10 @@ def eighty_point(cus, threshold):
 
 
 def cu_of(ts, cu_starts):
+    """Number of the latest check-up that started at or before time `ts`, or None if none had.
+
+    cu_starts: {cu: start_timestamp}
+    """
     best = None
     for cu, t in cu_starts.items():
         if t <= ts and (best is None or t > cu_starts[best]):
@@ -208,6 +256,8 @@ def eis_resistances(pts):
     """R0, R1 (mOhm) and the knee frequency (Hz) of one spectrum; None where not determinable.
 
     pts: [(freq_Hz, re, im)] sorted by descending frequency, im as stored (positive = capacitive).
+    A local minimum of the phase is strictly below the next higher-frequency point and not above
+    the next lower-frequency one, so a flat bottom counts once, at its higher-frequency end.
     """
     r0 = None
     window = [p for p in pts if R0_FREQ_RANGE[0] <= p[0] <= R0_FREQ_RANGE[1]]
@@ -229,7 +279,12 @@ def eis_resistances(pts):
     return r0, low[k][1] - r0, low[k][0]
 
 
-def build_eis(rows, cu_starts):
+def group_spectra(rows):
+    """Group the valid points of an impedance file into spectra by sd_block_id.
+
+    Returns {block_id: {"ts", "soc", "rt", "pts": [(freq_Hz, re, im), ...]}}. Rows marked invalid and
+    points with a missing value are left out.
+    """
     spectra = {}
     for r in rows:
         if to_int(r["valid"]) != 1:
@@ -238,13 +293,25 @@ def build_eis(rows, cu_starts):
         fr = num(r["freq_Hz"])
         if re_ is None or im is None or fr is None:
             continue
-        spectra.setdefault(r["sd_block_id"], {"ts": float(r["timestamp_s"]), "soc": to_int(r["soc_nom"]),
-                                              "rt": to_int(r["is_rt"]), "pts": []})["pts"].append((fr, re_, im))
+        block = spectra.setdefault(r["sd_block_id"], {"ts": float(r["timestamp_s"]), "soc": to_int(r["soc_nom"]),
+                                                      "rt": to_int(r["is_rt"]), "pts": []})
+        block["pts"].append((fr, re_, im))
+    return spectra
+
+
+def build_eis(rows, cu_starts):
+    """Spectra and resistances of one cell's impedance file.
+
+    Each spectrum is assigned to a check-up by its start time. If several spectra share a check-up,
+    state of charge and temperature, the latest one is kept and the others are counted as duplicates.
+    Returns (spectra, resistances, duplicates); resistances holds [cu, soc, rt, r0, r1, knee_Hz] per spectrum.
+    """
+    spectra = group_spectra(rows)
     keep = {}
     dups = 0
     for s in sorted(spectra.values(), key=lambda s: s["ts"]):
         cu = cu_of(s["ts"], cu_starts)
-        if cu is None or len(s["pts"]) < 5:
+        if cu is None or len(s["pts"]) < MIN_SPECTRUM_POINTS:
             continue
         if (cu, s["soc"], s["rt"]) in keep:
             dups += 1
@@ -259,29 +326,32 @@ def build_eis(rows, cu_starts):
         entry = keep[k]
         r0, r1, f1 = entry.pop("res")
         spectra_out.append(entry)
-        resistances.append([entry["cu"], entry["soc"], entry["rt"], r3(r0, 3), r3(r1, 3), r3(f1, 4)])
+        resistances.append([entry["cu"], entry["soc"], entry["rt"],
+                            round_opt(r0, 3), round_opt(r1, 3), round_opt(f1, 4)])
     return spectra_out, resistances, dups
 
 
 def dump(path, obj):
+    """Write `obj` to `path` as compact JSON with sorted keys, creating the folder if needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(obj, f, separators=(",", ":"), sort_keys=True)
 
 
 def main():
+    """Process every cell's files and write the JSON outputs."""
     root = Path(__file__).resolve().parents[1]
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default=str(root / "data" / "raw"))
     ap.add_argument("--out", default=str(root / "data" / "processed"))
     ap.add_argument("--limit", type=int, default=0, help="only process the first N cells (testing)")
-    a = ap.parse_args()
-    raw, out = Path(a.raw), Path(a.out)
+    args = ap.parse_args()
+    raw, out = Path(args.raw), Path(args.out)
 
     files = cell_files(raw)
     cells = sorted(cid for cid in files if files[cid]["eoc"])
-    if a.limit:
-        cells = cells[: a.limit]
+    if args.limit:
+        cells = cells[: args.limit]
 
     conditions, capacity, eis_r = {}, {}, {}
     notes = Counter()
@@ -299,8 +369,8 @@ def main():
         cond["replicate"] = int(cid.split("-")[1])
         conditions[cid], capacity[cid] = cond, cap
         if files[cid]["eis"]:
-            spectra, resistances, d = build_eis(read_rows(files[cid]["eis"]), cu_starts)
-            notes["eis_duplicate_blocks"] += d
+            spectra, resistances, dups = build_eis(read_rows(files[cid]["eis"]), cu_starts)
+            notes["eis_duplicate_blocks"] += dups
             eis_r[cid] = resistances
             notes["eis_spectra"] += len(resistances)
             notes["eis_without_r0"] += sum(1 for r in resistances if r[3] is None)

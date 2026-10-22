@@ -16,6 +16,7 @@
     <nav class="site-nav" aria-label="Views">
       <a href="index.html">Home</a>
       <a href="capacity.html" aria-current="page">Capacity fade</a>
+      <a href="impedance.html">Impedance</a>
     </nav>
   </div>
 </header>
@@ -25,7 +26,7 @@
   <p class="lede">
     Discharge capacity at each periodic check-up, for the 228 cells of the aging experiment.
     Cells aged under the same condition share a color and line style (three cells per condition),
-    so their spread shows cell-to-cell variation. Diamonds mark where a cell falls below 80% of its reference capacity, which is the cell's own first capacity by default. Capacity is shown in Ah in both views.
+    so their spread shows cell-to-cell variation. Diamonds mark where a cell falls below 80% of its reference capacity, which is the cell's own first capacity by default. Capacity is shown in Ah for both references.
   </p>
 
   <form class="controls" id="controls" aria-label="Filters" onsubmit="return false">
@@ -54,9 +55,9 @@
       <li><strong>80% point:</strong> the first discharge capacity below 80% of a reference capacity, linearly interpolated between the two neighboring check-ups. Cells that never drop below it within the data have no marker. CU 29 is excluded.</li>
       <li><strong>80% reference:</strong> by default each cell is measured against its own first discharge capacity (CU 1 for every cell), so the crossing reflects how fast that cell fades; each cell's threshold is then 80% of its own first capacity, a slightly different height for every cell, so the chart has no single threshold line and the diamonds sit at those heights. The alternative is the 3.0 Ah nominal capacity (a fixed 2.4 Ah line), the reference of the state-of-health scale defined in the dataset authors' paper (the 80% threshold on that reference is this project's choice, not the authors'). Cells start slightly below 3.0 Ah, so against their own capacity they cross later, and a few cells reach 2.4 Ah without reaching 80% of their own first capacity. The dataset's own state-of-health column is not used.</li>
       <li><strong>Equivalent full cycles (EFC)</strong> are the mean of the total charged and discharged throughput divided by 3.0 Ah, as defined in the dataset readme. Calendar-aged cells only accumulate throughput during check-ups, so time is the meaningful axis for them.</li>
-      <li><strong>Capacity recovery before CU 24:</strong> one of the three cells of each calendar condition was held at 10% SoC at its aging temperature for about 2.5 days just before CU 24. Cells aged at high SoC regained part of their lost capacity, which appears as an upward step at CU 24 (for example P011-3: 2.667 Ah at CU 23, 2.688 Ah at CU 24).</li>
+      <li><strong>Capacity recovery before CU 24:</strong> one of the three cells of each calendar condition above 10% SoC, the one with intermediate losses, was held at 10% SoC at its aging temperature for about 2.5 days just before CU 24. The nine of these cells that completed CU 24 regained part of their lost capacity, which appears as an upward step at CU 24, largest for cells aged at 90 and 100% SoC (for example P011-3: 2.667 Ah at CU 23, 2.688 Ah at CU 24). Most of the recovered capacity is lost again by CU 25.</li>
       <li><strong>Early shutoff:</strong> cells P012-1, P015-3 and P016-1 shut off at CU 24 and have no capacity after CU 23.</li>
-      <li><strong>Voltage windows</strong> are the target charge and discharge voltages of the cycling profile, not state-of-charge ranges.</li>
+      <li><strong>Voltage windows</strong> are the target charge and discharge voltages of the cycling profile. The cycler applies voltage limits; the authors relate them to state-of-charge ranges of approximately 0–100%, 10–100% and 10–90%.</li>
       <li>A check-up with a missing discharge capacity is skipped, and the line connects the neighboring check-ups.</li>
     </ul>
   </details>
@@ -75,22 +76,19 @@
   if (location.protocol === 'file:') {
     document.getElementById('chart').innerHTML =
       '<div class="notice"><p>This page needs to be served over HTTP. From the project folder run ' +
-      '<code>python3 -m http.server</code> and open <code>http://localhost:8000/capacity.html</code>.</p></div>';
+      '<code>python3 -m http.server</code> and open ' +
+      '<code>http://localhost:8000/' + location.pathname.split('/').pop() + '</code>.</p></div>';
   }
 </script>
 <script type="module">
 import {
-  loadJson, showLoadError, cssVar, onThemeChange,
-  AGING, TEMPERATURES, seriesVar, radioGroup, checkGroup,
+  $, FONT, MANUAL_CU, LAST_REGULAR_CU, X_AXES, loadJson, showLoadError, cssVar, isNarrow, watchDisplay,
+  radioGroup, buildFilterControls, typeDefaults, visibleCells,
+  baseLayout, axisStyle, hoverLabel, seriesStyle, trackLongest, directLabels, drawChart, fillTable,
 } from './filters.js';
 
-const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 const NOMINAL_AH = 3.0;
 const THRESHOLD_AH = 0.8 * NOMINAL_AH;
-const LAST_REGULAR_CU = 28;
-const MANUAL_CU = 29;
-
-const $ = (id) => document.getElementById(id);
 
 let conditions;   // cell id -> condition metadata
 let capacity;     // cell id -> { cu: [...], q_ref, eol80_initial, eol80_nominal }
@@ -112,69 +110,17 @@ const refOf = () => REFS[state.ref];
 // Controls
 // ---------------------------------------------------------------------------
 
+/** Build the shared filter controls and the 80%-reference control. */
 function buildControls() {
-  radioGroup($('type-options'), 'type',
-    Object.entries(AGING).map(([id, a]) => ({ id, label: a.label })),
-    state.type, (id) => { state.type = id; resetForType(); buildDimensionControls(); render(); });
-
-  radioGroup($('temp-options'), 'temp',
-    TEMPERATURES.map((t) => ({ id: String(t), label: `${t} °C` })),
-    String(state.temp), (id) => { state.temp = Number(id); render(); });
-
-  radioGroup($('x-options'), 'x',
-    [{ id: 'efc', label: 'Equivalent full cycles' }, { id: 'days', label: 'Time (days)' }],
-    state.x, (id) => { state.x = id; render(); });
-
+  buildFilterControls(state, render);
   radioGroup($('ref-options'), 'ref',
     [{ id: 'initial', label: 'Own first capacity' }, { id: 'nominal', label: 'Nominal 3.0 Ah' }],
     state.ref, (id) => { state.ref = id; render(); });
-
-  buildDimensionControls();
-}
-
-/** Default selections when the aging type changes. */
-function resetForType() {
-  const a = AGING[state.type];
-  state.color = a.color.values.map((v) => v.id);
-  state.dash = a.dash ? [...a.dash.defaultChecked] : [];
-  state.x = a.defaultX;
-  radioGroup($('x-options'), 'x',
-    [{ id: 'efc', label: 'Equivalent full cycles' }, { id: 'days', label: 'Time (days)' }],
-    state.x, (id) => { state.x = id; render(); });
-}
-
-/** Color (and optional line-style) filters, which double as the chart legend. */
-function buildDimensionControls() {
-  const a = AGING[state.type];
-  $('color-title').textContent = a.color.title;
-  checkGroup($('color-options'),
-    a.color.values.map((v, i) => ({ id: v.id, label: v.label, key: { colorVar: seriesVar(i) } })),
-    state.color, (ids) => { state.color = ids; render(); });
-
-  $('dash-group').hidden = !a.dash;
-  if (a.dash) {
-    $('dash-title').textContent = a.dash.title;
-    checkGroup($('dash-options'),
-      a.dash.values.map((v) => ({ id: v.id, label: v.label, key: { dash: v.css } })),
-      state.dash, (ids) => { state.dash = ids; render(); });
-  }
 }
 
 // ---------------------------------------------------------------------------
-// Selection and traces
+// Traces
 // ---------------------------------------------------------------------------
-
-/** Ids of the cells that match the current filters, sorted. */
-function visibleCells() {
-  const a = AGING[state.type];
-  return Object.keys(conditions).sort().filter((cid) => {
-    const c = conditions[cid];
-    return c.age_type === state.type
-      && c.temp_C === state.temp
-      && state.color.includes(a.color.of(c))
-      && (!a.dash || state.dash.includes(a.dash.of(c)));
-  });
-}
 
 /** Check-ups of one cell as plot points on the selected x-axis. */
 function pointsOf(cid) {
@@ -183,18 +129,15 @@ function pointsOf(cid) {
     .map((p) => ({ x: p[state.x], y: p.q_dis, cu: p.cu, efc: p.efc, days: p.days }));
 }
 
+/** Line traces for the given cells, the 80% markers, and the end point of each label group. */
 function buildTraces(cells) {
-  const a = AGING[state.type];
   const surface = cssVar('--surface');
   const traces = [];
   const markers = { x: [], y: [], color: [], text: [] };
   const groups = new Map();   // "colorId/dashId" -> longest cell, for direct labels
 
   for (const cid of cells) {
-    const c = conditions[cid];
-    const colorIndex = a.color.values.findIndex((v) => v.id === a.color.of(c));
-    const color = cssVar(seriesVar(colorIndex));
-    const dashValue = a.dash ? a.dash.values.find((v) => v.id === a.dash.of(c)) : null;
+    const style = seriesStyle(state.type, conditions[cid]);
     const pts = pointsOf(cid);
     if (!pts.length) continue;
 
@@ -202,28 +145,24 @@ function buildTraces(cells) {
       type: 'scatter', mode: 'lines', name: cid,
       x: pts.map((p) => p.x),
       y: pts.map((p) => p.y),
-      customdata: pts.map((p) => [cid, p.cu, p.efc, p.days, p.cu === MANUAL_CU ? ' (manual)' : '', ((p.q / capacity[cid].q_ref.Ah) * 100).toFixed(1)]),
-      line: { color, width: 2, dash: dashValue ? dashValue.plotly : 'solid' },
+      customdata: pts.map((p) => [cid, p.cu, p.efc, p.days, p.cu === MANUAL_CU ? ' (manual)' : '', ((p.y / capacity[cid].q_ref.Ah) * 100).toFixed(1)]),
+      line: { color: style.color, width: 2, dash: style.dash },
       hovertemplate:
         '<b>%{y:.3f} Ah</b> · %{customdata[5]}% of first capacity' +
         '<br>%{customdata[0]} · check-up %{customdata[1]}%{customdata[4]}' +
         '<br>%{customdata[2]} EFC · day %{customdata[3]}<extra></extra>',
-      hoverlabel: { bgcolor: surface, bordercolor: color, font: { color: cssVar('--ink'), family: FONT, size: 12 } },
+      hoverlabel: hoverLabel(style.color),
     });
 
     const eol = capacity[cid][refOf().key];
     if (eol && eol[state.x] != null) {
       markers.x.push(eol[state.x]);
       markers.y.push(thresholdOf(cid));
-      markers.color.push(color);
+      markers.color.push(style.color);
       markers.text.push(`${cid} · between check-ups ${eol.between_cu[0]} and ${eol.between_cu[1]}`);
     }
 
-    const key = `${a.color.of(c)}/${dashValue ? dashValue.id : ''}`;
-    const longest = groups.get(key);
-    if (!longest || pts[pts.length - 1].x > longest.last.x) {
-      groups.set(key, { last: pts[pts.length - 1], label: a.color.values[colorIndex].short });
-    }
+    trackLongest(groups, style, pts);
   }
 
   if (markers.x.length) {
@@ -232,7 +171,7 @@ function buildTraces(cells) {
       x: markers.x, y: markers.y, text: markers.text,
       marker: { symbol: 'diamond', size: 11, color: markers.color, line: { color: surface, width: 2 } },
       hovertemplate: `<b>${refOf().reached}</b><br>%{text}<extra></extra>`,
-      hoverlabel: { bgcolor: surface, bordercolor: cssVar('--axis'), font: { color: cssVar('--ink'), family: FONT, size: 12 } },
+      hoverlabel: hoverLabel(cssVar('--axis')),
     });
   }
   return { traces, groups };
@@ -242,22 +181,14 @@ function buildTraces(cells) {
 // Rendering
 // ---------------------------------------------------------------------------
 
+/** Redraw the chart, summary line and table for the current filters. */
 function render() {
-  const cells = visibleCells();
+  const cells = visibleCells(conditions, state);
   const { traces, groups } = buildTraces(cells);
   const ink2 = cssVar('--ink-2');
-  const surface = cssVar('--surface');
+  const narrow = isNarrow();
 
-  // Direct labels only while few enough groups are on screen to stay legible,
-  // and not on narrow screens where the right margin would crowd the plot.
-  const narrow = window.matchMedia('(max-width: 599px)').matches;
-  const labelled = !narrow && groups.size >= 1 && groups.size <= 4;
-  const annotations = labelled
-    ? [...groups.values()].map((g) => ({
-        x: g.last.x, y: g.last.y, text: g.label, showarrow: false,
-        xanchor: 'left', xshift: 8, font: { size: 11, color: ink2, family: FONT },
-      }))
-    : [];
+  const annotations = directLabels(groups, narrow);
   // The threshold label sits in the right margin when there is room, else above the line.
   // The own-capacity reference has a different threshold per cell, so it gets no line or label.
   const ref = refOf();
@@ -273,24 +204,11 @@ function render() {
   const yRange = [Math.floor((Math.min(ref.threshold ?? Infinity, ...allY, ...markerY) - 0.1) * 10) / 10, 3.1];
 
   const layout = {
-    paper_bgcolor: surface,
-    plot_bgcolor: surface,
-    font: { family: FONT, size: 12, color: ink2 },
-    height: narrow ? 360 : 520,
+    ...baseLayout(narrow),
     margin: { l: narrow ? 52 : 62, r: narrow ? 16 : 110, t: 12, b: 56 },
     showlegend: false,
-    hovermode: 'closest',
-    hoverdistance: 30,
-    xaxis: {
-      title: { text: state.x === 'efc' ? 'Equivalent full cycles' : 'Time (days)', standoff: 10 },
-      rangemode: 'tozero', zeroline: false,
-      gridcolor: cssVar('--grid'), linecolor: cssVar('--axis'), tickcolor: cssVar('--axis'), ticks: 'outside',
-    },
-    yaxis: {
-      title: { text: 'Discharge capacity (Ah)', standoff: 8 },
-      range: yRange, zeroline: false, tickformat: '.1f',
-      gridcolor: cssVar('--grid'), linecolor: cssVar('--axis'), tickcolor: cssVar('--axis'), ticks: 'outside',
-    },
+    xaxis: { title: { text: X_AXES[state.x], standoff: 10 }, rangemode: 'tozero', ...axisStyle() },
+    yaxis: { title: { text: 'Discharge capacity (Ah)', standoff: 8 }, range: yRange, tickformat: '.1f', ...axisStyle() },
     shapes: ref.threshold == null ? [] : [{
       type: 'line', xref: 'paper', x0: 0, x1: 1, y0: ref.threshold, y1: ref.threshold,
       line: { color: cssVar('--muted'), width: 1 },
@@ -298,11 +216,12 @@ function render() {
     annotations,
   };
 
-  Plotly.react('chart', traces, layout, { displayModeBar: false, responsive: true });
+  drawChart(traces, layout);
   renderSummary(cells);
   renderTable(cells);
 }
 
+/** One-line summary under the chart: cells shown, how many cross 80%, how many stop early. */
 function renderSummary(cells) {
   const crossed = cells.filter((cid) => capacity[cid][refOf().key]).length;
   const early = cells.filter((cid) => conditions[cid].last_cu < LAST_REGULAR_CU).length;
@@ -316,43 +235,24 @@ function renderSummary(cells) {
 function renderTable(cells) {
   const cuNumbers = Array.from({ length: MANUAL_CU }, (_, i) => i + 1);
   const head = ['Cell', 'First capacity (Ah)', '80% point (EFC)', '80% point (days)', ...cuNumbers.map((n) => `CU ${n}`)];
-  const thead = document.createElement('thead');
-  const hr = document.createElement('tr');
-  head.forEach((h, i) => {
-    const th = document.createElement('th');
-    th.textContent = h;
-    th.scope = 'col';
-    if (i > 0) th.className = 'num';
-    hr.append(th);
-  });
-  thead.append(hr);
-
-  const tbody = document.createElement('tbody');
-  for (const cid of cells) {
+  const rows = cells.map((cid) => {
     const byCu = new Map(capacity[cid].cu.map((p) => [p.cu, p.q_dis]));
     const eol = capacity[cid][refOf().key];
-    const values = [
+    return [
       cid,
       capacity[cid].q_ref ? capacity[cid].q_ref.Ah.toFixed(3) : '–',
       eol && eol.efc != null ? String(eol.efc) : '–',
       eol && eol.days != null ? String(eol.days) : '–',
       ...cuNumbers.map((n) => (byCu.get(n) != null ? byCu.get(n).toFixed(3) : '–')),
     ];
-    const tr = document.createElement('tr');
-    values.forEach((v, i) => {
-      const td = document.createElement('td');
-      td.textContent = v;
-      if (i > 0) td.className = 'num';
-      tr.append(td);
-    });
-    tbody.append(tr);
-  }
+  });
   $('table-caption').textContent = 'Check-up columns show discharge capacity in Ah.';
-  $('table').replaceChildren(thead, tbody);
+  fillTable($('table'), head, rows);
 }
 
 // ---------------------------------------------------------------------------
 
+/** Load the data, build the controls and draw the first chart. */
 async function init() {
   try {
     [conditions, capacity] = await Promise.all([loadJson('conditions.json'), loadJson('capacity.json')]);
@@ -360,11 +260,10 @@ async function init() {
     showLoadError($('chart'), err);
     return;
   }
-  resetForType();
+  Object.assign(state, typeDefaults(state.type));
   buildControls();
   render();
-  onThemeChange(render);
-  window.matchMedia('(max-width: 599px)').addEventListener('change', render);
+  watchDisplay(render);
 }
 
 init();

@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impedance · Battery aging explorer</title>
+<meta name="description" content="Ohmic resistance R0 and R1 from the impedance spectra of 228 NMC/C-SiO 18650 cells at each check-up, plus Nyquist plots of individual spectra.">
+<link rel="stylesheet" href="style.css">
+<!-- Plotly is loaded from a CDN at a pinned version. -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <span class="site-title">Battery aging explorer</span>
+    <nav class="site-nav" aria-label="Views">
+      <a href="index.html">Home</a>
+      <a href="capacity.html">Capacity fade</a>
+      <a href="impedance.html" aria-current="page">Impedance</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <h1>Impedance</h1>
+  <p class="lede">
+    Resistances taken from the impedance spectra measured at each check-up. R0 is the ohmic resistance, where a spectrum crosses the real axis;
+    R1 is the distance along the real axis from there to the knee of the spectrum, its point of lowest phase angle. One view follows them against aging,
+    the other shows the spectra themselves. Cells aged under the same condition share a color and line style (three cells per condition).
+  </p>
+
+  <form class="controls" id="controls" aria-label="Filters" onsubmit="return false">
+    <fieldset><legend>View</legend><div class="options seg" id="view-options"></div></fieldset>
+    <fieldset><legend>Aging type</legend><div class="options seg" id="type-options"></div></fieldset>
+    <fieldset><legend>Aging temperature</legend><div class="options seg" id="temp-options"></div></fieldset>
+    <fieldset><legend id="color-title"></legend><div class="options checks" id="color-options"></div></fieldset>
+    <fieldset id="dash-group"><legend id="dash-title"></legend><div class="options checks" id="dash-options"></div></fieldset>
+    <fieldset><legend>Measured at</legend><div class="options seg" id="meas-options"></div></fieldset>
+    <fieldset><legend>State of charge</legend><div class="options seg" id="soc-options"></div></fieldset>
+    <fieldset id="quantity-group"><legend>Resistance</legend><div class="options seg" id="quantity-options"></div></fieldset>
+    <fieldset id="x-group"><legend>X axis</legend><div class="options seg" id="x-options"></div></fieldset>
+    <fieldset id="cell-group"><legend><label for="cell-select">Cell</label></legend><select id="cell-select"></select></fieldset>
+  </form>
+
+  <div class="chart-card"><div id="chart" role="img" aria-label="Chart of impedance resistances. A table with the same values follows the chart."></div></div>
+  <div class="ramp" id="ramp" hidden>
+    <span>Check-up 1</span><span class="ramp-bar" id="ramp-bar" aria-hidden="true"></span><span>Check-up 28</span>
+  </div>
+  <p class="summary" id="summary" aria-live="polite"></p>
+
+  <details>
+    <summary>Table view</summary>
+    <p class="summary" id="table-caption"></p>
+    <div class="table-wrap"><table id="table"></table></div>
+  </details>
+
+  <details>
+    <summary>Notes on the data</summary>
+    <ul class="notes">
+      <li><strong>Spectra</strong> are used as stored in the dataset, with the authors' compensated impedance. Spectra marked invalid and points with missing values are dropped. At each check-up a spectrum is measured at five states of charge, at room temperature and at the cell's aging (operating) temperature. Values are in milliohms.</li>
+      <li><strong>Room and aging temperature</strong> are told apart by the dataset's <code>is_rt</code> flag: 1 for a measurement at room temperature, 0 for one at operating (aging) temperature.</li>
+      <li><strong>R0</strong> is the real part where the spectrum crosses the real axis, found by linear interpolation between the two neighboring points, searched between 200 Hz and 3.3 kHz.</li>
+      <li><strong>R1</strong> is the real part at the knee of the spectrum minus R0. The knee is the point of lowest phase angle among the local minima of the phase at or below 33 Hz, and it must have at least two measured points at lower frequency. Without such a knee a spectrum has no R1 and the point is left out of the chart. The authors instead take the lowest phase angle over 0.49 to 33 Hz, which can return an end point of that range, and average over each check-up; here every spectrum is evaluated on its own.</li>
+      <li><strong>Not fitted:</strong> R0 and R1 are read directly from the measured spectra. They are not parameters of a fitted equivalent circuit, and R1 is not identified with a single process.</li>
+      <li><strong>Nyquist plot:</strong> the imaginary part is plotted as stored, positive for capacitive behavior, so spectra rise as the frequency falls. At the highest frequencies the points lie below the real axis. Diamonds mark R0 on the real axis and circles mark the knee. The authors report the data as most accurate between 0.5 Hz and 5 kHz, excluding 100 Hz and 208.3 Hz; no points are removed here on that basis.</li>
+      <li><strong>Check-up numbers</strong> run from CU 1 to CU 28, plus CU 29, a manual check-up performed at room temperature with air cooling, marked “manual” in the tooltip.</li>
+      <li><strong>Equivalent full cycles (EFC)</strong> are as on the capacity page. Calendar-aged cells only accumulate throughput during check-ups, so time is the meaningful axis for them.</li>
+    </ul>
+  </details>
+
+  <p class="summary">
+    Data: M. Luh and T. Blank, <em>Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell</em>
+    (version 2: result data), RADAR4KIT, 2024,
+    <a href="https://doi.org/10.35097/1969">doi:10.35097/1969</a>, licensed
+    <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. R0 and R1 follow the authors' definitions with a modified R1 search; values shown are derived from that dataset. See the
+    <a href="index.html#about">project overview</a>.
+  </p>
+</main>
+
+<script>
+  // ES modules and fetch() are blocked for pages opened from disk; say so instead of showing an empty chart.
+  if (location.protocol === 'file:') {
+    document.getElementById('chart').innerHTML =
+      '<div class="notice"><p>This page needs to be served over HTTP. From the project folder run ' +
+      '<code>python3 -m http.server</code> and open ' +
+      '<code>http://localhost:8000/' + location.pathname.split('/').pop() + '</code>.</p></div>';
+  }
+</script>
+<script type="module">
+import {
+  $, FONT, MANUAL_CU, LAST_REGULAR_CU, X_AXES, loadJson, showLoadError, cssVar, isNarrow, watchDisplay,
+  radioGroup, buildFilterControls, typeDefaults, visibleCells,
+  baseLayout, axisStyle, hoverLabel, seriesStyle, trackLongest, directLabels, drawChart, fillTable,
+} from './filters.js';
+
+const SOCS = [10, 30, 50, 70, 90];
+
+let conditions;   // cell id -> condition metadata
+let capacity;     // cell id -> { cu: [{ cu, efc, days, ... }], ... }
+let rIndex;       // cell id -> Map "cu|soc|rt" -> { r0, r1, knee }
+let cuInfo;       // cell id -> Map cu -> { efc, days }
+const spectraCache = new Map();   // cell id -> spectra list, loaded on demand
+let renderToken = 0;
+
+const state = { view: 'resist', type: 'cyclic', temp: 25, color: [], dash: [], x: 'efc',
+                quantity: 'r1', meas: '0', soc: '50', cell: null };
+
+const QUANTITIES = {
+  r0: { label: 'R0', title: 'R0 (mΩ)' },
+  r1: { label: 'R1', title: 'R1 (mΩ)' },
+};
+const MEAS = { '0': 'aging temperature', '1': 'room temperature' };
+
+// Sequential single-hue ramps for the check-up number: light to dark in light mode,
+// and dark to light in dark mode so later check-ups always stand out more.
+const RAMP_LIGHT = ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab', '#104281', '#0d366b'];
+const RAMP_DARK = ['#184f95', '#256abf', '#3987e5', '#6da7ec', '#86b6ef', '#9ec5f4'];
+const isDark = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+const rampStops = () => (isDark() ? RAMP_DARK : RAMP_LIGHT);
+
+/** Color of check-up `cu` on the ramp (CU 1 at one end, CU 28 and the manual CU 29 at the other). */
+function rampColor(cu) {
+  const stops = rampStops().map((h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)));
+  const t = Math.min(Math.max((cu - 1) / (LAST_REGULAR_CU - 1), 0), 1) * (stops.length - 1);
+  const i = Math.min(Math.floor(t), stops.length - 2);
+  const f = t - i;
+  const c = stops[i].map((v, k) => Math.round(v + (stops[i + 1][k] - v) * f));
+  return `rgb(${c.join(',')})`;
+}
+
+// ---------------------------------------------------------------------------
+// Data access
+// ---------------------------------------------------------------------------
+
+/** One stored resistance entry { r0, r1, knee } of a cell, or undefined. */
+const entryOf = (cid, cu, soc = state.soc, rt = state.meas) => rIndex[cid].get(`${cu}|${soc}|${rt}`);
+const valueOf = (e) => (e ? e[state.quantity] : null);
+
+/** Spectra of one cell, fetched the first time the cell is shown. */
+async function spectraOf(cid) {
+  if (!spectraCache.has(cid)) spectraCache.set(cid, await loadJson(`impedance/${cid}.json`));
+  return spectraCache.get(cid);
+}
+
+// ---------------------------------------------------------------------------
+// Controls
+// ---------------------------------------------------------------------------
+
+/** Build the shared filter controls and the controls specific to this page. */
+function buildControls() {
+  radioGroup($('view-options'), 'view',
+    [{ id: 'resist', label: 'Resistance against aging' }, { id: 'nyquist', label: 'Nyquist spectra' }],
+    state.view, (id) => { state.view = id; applyView(); render(); });
+
+  buildFilterControls(state, render);
+
+  radioGroup($('meas-options'), 'meas',
+    [{ id: '0', label: 'Aging temperature' }, { id: '1', label: 'Room temperature' }],
+    state.meas, (id) => { state.meas = id; render(); });
+
+  radioGroup($('soc-options'), 'soc',
+    SOCS.map((s) => ({ id: String(s), label: `${s}%` })),
+    state.soc, (id) => { state.soc = id; render(); });
+
+  radioGroup($('quantity-options'), 'quantity',
+    Object.entries(QUANTITIES).map(([id, q]) => ({ id, label: q.label })),
+    state.quantity, (id) => { state.quantity = id; render(); });
+
+  $('cell-select').addEventListener('change', (ev) => { state.cell = ev.target.value; render(); });
+  applyView();
+}
+
+/** Show only the controls that belong to the selected view. */
+function applyView() {
+  const nyquist = state.view === 'nyquist';
+  $('x-group').hidden = nyquist;
+  $('quantity-group').hidden = nyquist;
+  $('cell-group').hidden = !nyquist;
+  $('ramp').hidden = !nyquist;
+  $('chart').setAttribute('aria-label', nyquist
+    ? 'Nyquist plot of the impedance spectra of one cell, one curve per check-up. A table with the resistances of the cell follows the chart.'
+    : 'Line chart of a resistance taken from the impedance spectra, against aging, one line per cell. A table with the same cells follows the chart.');
+}
+
+/** Keep the cell picker in step with the filters; the chosen cell stays if it is still shown. */
+function syncCellSelect(cells) {
+  if (!cells.includes(state.cell)) state.cell = cells[0] ?? null;
+  const select = $('cell-select');
+  select.replaceChildren(...cells.map((cid) => Object.assign(document.createElement('option'), { value: cid, textContent: cid })));
+  select.value = state.cell ?? '';
+}
+
+// ---------------------------------------------------------------------------
+// Resistance against aging
+// ---------------------------------------------------------------------------
+
+/** Check-ups of one cell as plot points on the selected x-axis, for the selected resistance. */
+function pointsOf(cid) {
+  const pts = [];
+  for (const [cu, info] of cuInfo[cid]) {
+    const e = entryOf(cid, cu);
+    const y = valueOf(e);
+    if (y == null || info[state.x] == null) continue;
+    pts.push({ x: info[state.x], y, cu, efc: info.efc, days: info.days, knee: e.knee });
+  }
+  return pts.sort((p, q) => p.cu - q.cu);
+}
+
+/** Line traces for the given cells and the end point of each label group. */
+function buildTraces(cells) {
+  const q = QUANTITIES[state.quantity];
+  const traces = [];
+  const groups = new Map();   // "colorId/dashId" -> longest cell, for direct labels
+
+  for (const cid of cells) {
+    const style = seriesStyle(state.type, conditions[cid]);
+    const pts = pointsOf(cid);
+    if (!pts.length) continue;
+
+    traces.push({
+      type: 'scatter', mode: 'lines', name: cid,
+      x: pts.map((p) => p.x),
+      y: pts.map((p) => p.y),
+      customdata: pts.map((p) => [cid, p.cu, p.efc, p.days, p.cu === MANUAL_CU ? ' (manual)' : '', p.knee]),
+      line: { color: style.color, width: 2, dash: style.dash },
+      hovertemplate:
+        `<b>%{y:.2f} mΩ</b> ${q.label}` +
+        '<br>%{customdata[0]} · check-up %{customdata[1]}%{customdata[4]}' +
+        '<br>%{customdata[2]} EFC · day %{customdata[3]}' +
+        (state.quantity === 'r1' ? '<br>knee at %{customdata[5]} Hz' : '') +
+        '<extra></extra>',
+      hoverlabel: hoverLabel(style.color),
+    });
+
+    trackLongest(groups, style, pts);
+  }
+  return { traces, groups };
+}
+
+/** Draw the selected resistance against aging, one line per cell. */
+function renderResistance(cells, narrow) {
+  const { traces, groups } = buildTraces(cells);
+  const annotations = directLabels(groups, narrow);
+  if (!traces.length) {
+    annotations.push({ xref: 'paper', yref: 'paper', x: 0.5, y: 0.5, showarrow: false,
+      text: cells.length ? 'No values for this selection.' : 'No cells match the selected filters.',
+      font: { size: 14, color: cssVar('--ink-2'), family: FONT } });
+  }
+
+  const layout = {
+    ...baseLayout(narrow),
+    margin: { l: narrow ? 52 : 62, r: narrow ? 16 : 110, t: 12, b: 56 },
+    showlegend: false,
+    xaxis: { title: { text: X_AXES[state.x], standoff: 10 }, rangemode: 'tozero', ...axisStyle() },
+    yaxis: { title: { text: QUANTITIES[state.quantity].title, standoff: 8 }, rangemode: 'tozero', ...axisStyle() },
+    annotations,
+  };
+  return drawChart(traces, layout);
+}
+
+// ---------------------------------------------------------------------------
+// Nyquist spectra of one cell
+// ---------------------------------------------------------------------------
+
+/**
+ * Draw one curve per check-up for a cell at the selected state of charge and measurement temperature,
+ * with R0 and knee markers. Resolves to the spectra shown, or null if loading failed or a newer render superseded this one.
+ */
+async function renderNyquist(cid, narrow, token) {
+  const surface = cssVar('--surface');
+  const ink = cssVar('--ink');
+  const ink2 = cssVar('--ink-2');
+  let spectra = [];
+  if (cid) {
+    try {
+      spectra = await spectraOf(cid);
+    } catch (err) {
+      showLoadError($('chart'), err);
+      return null;
+    }
+    if (token !== renderToken) return null;   // a newer render has started
+  }
+  const soc = Number(state.soc);
+  const rt = Number(state.meas);
+  const shown = spectra.filter((s) => s.soc === soc && s.rt === rt).sort((p, q) => p.cu - q.cu);
+
+  const traces = [];
+  const r0Pts = { x: [], y: [], text: [] };
+  const kneePts = { x: [], y: [], text: [] };
+  for (const s of shown) {
+    const manual = s.cu === MANUAL_CU ? ' (manual)' : '';
+    traces.push({
+      type: 'scatter', mode: 'lines+markers', name: `CU ${s.cu}`, showlegend: false,
+      x: s.re, y: s.im,
+      customdata: s.f.map((f) => [s.cu, f, manual]),
+      line: { color: rampColor(s.cu), width: 1.5 },
+      marker: { color: rampColor(s.cu), size: 4 },
+      hovertemplate: '<b>%{customdata[1]} Hz</b><br>Re %{x:.2f} · Im %{y:.2f} mΩ<br>check-up %{customdata[0]}%{customdata[2]}<extra></extra>',
+      hoverlabel: hoverLabel(rampColor(s.cu)),
+    });
+    const e = entryOf(cid, s.cu, state.soc, state.meas);
+    if (!e) continue;
+    if (e.r0 != null) {
+      r0Pts.x.push(e.r0); r0Pts.y.push(0);
+      r0Pts.text.push(`CU ${s.cu} · R0 ${e.r0.toFixed(2)} mΩ`);
+    }
+    if (e.r0 != null && e.r1 != null && e.knee != null) {
+      let k = 0;   // spectrum point at the knee frequency
+      s.f.forEach((f, i) => { if (Math.abs(f - e.knee) < Math.abs(s.f[k] - e.knee)) k = i; });
+      kneePts.x.push(s.re[k]); kneePts.y.push(s.im[k]);
+      kneePts.text.push(`CU ${s.cu} · knee at ${e.knee} Hz · R1 ${e.r1.toFixed(2)} mΩ`);
+    }
+  }
+  if (r0Pts.x.length) {
+    traces.push({
+      type: 'scatter', mode: 'markers', name: 'R0 (real-axis crossing)',
+      x: r0Pts.x, y: r0Pts.y, text: r0Pts.text,
+      marker: { symbol: 'diamond', size: 9, color: ink, line: { color: surface, width: 2 } },
+      hovertemplate: '%{text}<extra></extra>',
+      hoverlabel: hoverLabel(ink),
+    });
+  }
+  if (kneePts.x.length) {
+    traces.push({
+      type: 'scatter', mode: 'markers', name: 'Knee (lowest phase angle)',
+      x: kneePts.x, y: kneePts.y, text: kneePts.text,
+      marker: { symbol: 'circle-open', size: 10, color: ink, line: { color: ink, width: 2 } },
+      hovertemplate: '%{text}<extra></extra>',
+      hoverlabel: hoverLabel(ink),
+    });
+  }
+
+  const annotations = traces.length ? [] : [{
+    xref: 'paper', yref: 'paper', x: 0.5, y: 0.5, showarrow: false,
+    text: cid ? 'No spectra for this selection.' : 'No cells match the selected filters.',
+    font: { size: 14, color: ink2, family: FONT },
+  }];
+  const layout = {
+    ...baseLayout(narrow),
+    height: narrow ? 380 : 560,
+    margin: { l: narrow ? 52 : 62, r: 16, t: 12, b: 96 },
+    showlegend: true,
+    legend: { orientation: 'h', x: 0, y: -0.2, font: { color: ink2, family: FONT, size: 12 } },
+    xaxis: { title: { text: 'Re(Z) (mΩ)', standoff: 10 }, ...axisStyle() },
+    yaxis: { title: { text: 'Im(Z) (mΩ)', standoff: 8 }, scaleanchor: 'x', scaleratio: 1, ...axisStyle() },
+    annotations,
+  };
+  await drawChart(traces, layout);
+  return shown;
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+/** Redraw the selected view, summary line and table for the current filters. */
+async function render() {
+  const token = ++renderToken;
+  const cells = visibleCells(conditions, state);
+  syncCellSelect(cells);
+  const narrow = isNarrow();
+
+  // The ramp key under the Nyquist plot follows the theme.
+  $('ramp-bar').style.background = `linear-gradient(to right, ${rampStops().join(', ')})`;
+
+  if (state.view === 'resist') {
+    renderResistance(cells, narrow);
+    renderSummary(cells, null);
+  } else {
+    const shown = await renderNyquist(state.cell, narrow, token);
+    if (token !== renderToken || shown == null) return;
+    renderSummary(cells, shown);
+  }
+  renderTable(cells);
+}
+
+/** One-line summary under the chart: what is shown, and how many spectra lack the selected resistance. */
+function renderSummary(cells, shown) {
+  if (!cells.length) { $('summary').textContent = 'No cells match the selected filters.'; return; }
+  const where = `${state.soc}% state of charge, at ${MEAS[state.meas]}`;
+  if (shown) {
+    $('summary').textContent = `${state.cell} · ${shown.length} spectra (${where})`;
+    return;
+  }
+  let total = 0;
+  let empty = 0;
+  for (const cid of cells) {
+    for (const cu of cuInfo[cid].keys()) {
+      const e = entryOf(cid, cu);
+      if (!e) continue;
+      total += 1;
+      if (valueOf(e) == null) empty += 1;
+    }
+  }
+  const parts = [`${cells.length} cells shown`, where];
+  if (empty) parts.push(`${empty} of ${total} spectra ${empty === 1 ? 'has' : 'have'} no ${QUANTITIES[state.quantity].label} and ${empty === 1 ? 'is' : 'are'} left out`);
+  $('summary').textContent = parts.join(' · ');
+}
+
+/** Table twin of the chart: one resistance per cell and check-up, or all three values of the selected cell. */
+function renderTable(cells) {
+  const cuNumbers = Array.from({ length: MANUAL_CU }, (_, i) => i + 1);
+  const fmt = (v, d) => (v == null ? '–' : v.toFixed(d));
+  const head = [state.view === 'resist' ? 'Cell' : state.cell ?? 'Cell', ...cuNumbers.map((n) => `CU ${n}`)];
+  const rows = [];
+  if (state.view === 'resist') {
+    for (const cid of cells) {
+      rows.push([cid, ...cuNumbers.map((n) => fmt(valueOf(entryOf(cid, n)), 3))]);
+    }
+    $('table-caption').textContent =
+      `Check-up columns show ${QUANTITIES[state.quantity].label} in mΩ at ${state.soc}% state of charge, at ${MEAS[state.meas]}; – marks a missing spectrum or value.`;
+  } else if (state.cell) {
+    const cid = state.cell;
+    rows.push(['R0 (mΩ)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.r0, 3))]);
+    rows.push(['R1 (mΩ)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.r1, 3))]);
+    rows.push(['Knee (Hz)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.knee, 2))]);
+    $('table-caption').textContent =
+      `Resistances of ${cid} at ${state.soc}% state of charge, at ${MEAS[state.meas]}; – marks a missing spectrum or value.`;
+  } else {
+    $('table-caption').textContent = '';
+  }
+  fillTable($('table'), head, rows);
+}
+
+// ---------------------------------------------------------------------------
+
+/** Load the data, index it by cell, build the controls and draw the first view. */
+async function init() {
+  let eisR;
+  try {
+    [conditions, capacity, eisR] = await Promise.all([loadJson('conditions.json'), loadJson('capacity.json'), loadJson('eis_r.json')]);
+  } catch (err) {
+    showLoadError($('chart'), err);
+    return;
+  }
+  rIndex = {};
+  for (const [cid, list] of Object.entries(eisR)) {
+    rIndex[cid] = new Map(list.map(([cu, soc, rt, r0, r1, knee]) => [`${cu}|${soc}|${rt}`, { r0, r1, knee }]));
+  }
+  cuInfo = {};
+  for (const [cid, c] of Object.entries(capacity)) {
+    cuInfo[cid] = new Map(c.cu.map((p) => [p.cu, { efc: p.efc, days: p.days }]));
+  }
+  for (const cid of Object.keys(conditions)) {
+    if (!rIndex[cid]) rIndex[cid] = new Map();
+    if (!cuInfo[cid]) cuInfo[cid] = new Map();
+  }
+  Object.assign(state, typeDefaults(state.type));
+  buildControls();
+  render();
+  watchDisplay(render);
+}
+
+init();
+</script>
+</body>
+</html>

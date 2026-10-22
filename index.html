@@ -14,6 +14,7 @@
     <nav class="site-nav" aria-label="Views">
       <a href="index.html" aria-current="page">Home</a>
       <a href="capacity.html">Capacity fade</a>
+      <a href="impedance.html">Impedance</a>
     </nav>
   </div>
 </header>
@@ -33,16 +34,17 @@
         <p>Discharge capacity at every check-up, filtered by aging type, temperature and operating condition, with the 80% point of each cell.</p>
       </a>
     </li>
-    <li class="card pending">
-      <h3>Impedance</h3>
-      <p>R0 (ohmic) and R1 (from the real-axis intercept to the minimum-phase point) from impedance spectra against aging, plus Nyquist plots of individual spectra.</p>
-      <span class="tag">In progress</span>
+    <li class="card">
+      <a class="stretch" href="impedance.html">
+        <h3>Impedance</h3>
+        <p>R0 (ohmic) and R1 (from the real-axis intercept to the minimum-phase point) from impedance spectra against aging, plus Nyquist plots of individual spectra.</p>
+      </a>
     </li>
   </ul>
 
   <h2 id="about">About the data</h2>
   <p>
-    The cells are LG INR18650HG2 cylindrical cells (nickel-rich NMC cathode, C-SiO anode). The experiment comprises
+    The cells are LG INR18650HG2 cylindrical cells (NMC cathode, C-SiO anode). The experiment comprises
     76 aging conditions with three cells each, held at 0, 10, 25 or 40 °C:
   </p>
   <ul class="notes">
@@ -57,7 +59,7 @@
   </p>
   <p>
     The raw result files are reduced to compact JSON by <code>scripts/preprocess.py</code>, which selects the check-up values,
-    numbers the check-ups, computes equivalent full cycles and interpolates the 80% capacity point. The pages read only those JSON files in the browser.
+    numbers the check-ups, computes equivalent full cycles, interpolates the 80% capacity point and reads R0 and R1 from the impedance spectra. The pages read only those JSON files in the browser.
   </p>
 
   <h2>Source and license</h2>

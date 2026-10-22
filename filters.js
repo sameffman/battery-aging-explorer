@@ -1,10 +1,26 @@
 // Shared helpers for the explorer pages: data loading, aging-condition metadata,
-// stable color and line-style assignment, and small form-control builders.
+// filter controls, stable color and line-style assignment, and chart and table builders.
 //
 // Color and line style are assigned per condition value, never per row position,
 // so toggling a filter never recolors the series that remain on screen.
 
 export const DATA_DIR = 'data/processed/';
+export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+export const NARROW_QUERY = '(max-width: 599px)';
+
+/** Last of the regular check-ups; check-up 29 is the manual one at the end of the experiment. */
+export const LAST_REGULAR_CU = 28;
+export const MANUAL_CU = 29;
+
+/** X-axis choices for the aging charts: stored field name -> axis label. */
+export const X_AXES = { efc: 'Equivalent full cycles', days: 'Time (days)' };
+
+// ---------------------------------------------------------------------------
+// Page and data helpers
+// ---------------------------------------------------------------------------
+
+/** Shorthand for document.getElementById. */
+export const $ = (id) => document.getElementById(id);
 
 /** Fetch one processed JSON file, relative to the page. */
 export async function loadJson(name) {
@@ -39,9 +55,13 @@ export function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** Call back when the OS switches between light and dark mode. */
-export function onThemeChange(callback) {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', callback);
+/** Whether the viewport is narrow enough for the compact chart layout. */
+export const isNarrow = () => window.matchMedia(NARROW_QUERY).matches;
+
+/** Call `render` again when the OS switches between light and dark mode or the viewport crosses the narrow breakpoint. */
+export function watchDisplay(render) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  window.matchMedia(NARROW_QUERY).addEventListener('change', render);
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +139,28 @@ export const TEMPERATURES = [0, 10, 25, 40];
 /** CSS variable name of the n-th (0-based) categorical series color. */
 export const seriesVar = (index) => `--series-${index + 1}`;
 
+/** Default color, line-style and x-axis selections for an aging type. */
+export function typeDefaults(type) {
+  const a = AGING[type];
+  return {
+    color: a.color.values.map((v) => v.id),
+    dash: a.dash ? [...a.dash.defaultChecked] : [],
+    x: a.defaultX,
+  };
+}
+
+/** Ids of the cells whose conditions match the filter state (type, temp, color, dash), sorted. */
+export function visibleCells(conditions, state) {
+  const a = AGING[state.type];
+  return Object.keys(conditions).sort().filter((cid) => {
+    const c = conditions[cid];
+    return c.age_type === state.type
+      && c.temp_C === state.temp
+      && state.color.includes(a.color.of(c))
+      && (!a.dash || state.dash.includes(a.dash.of(c)));
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Form controls
 // ---------------------------------------------------------------------------
@@ -182,4 +224,151 @@ export function checkGroup(container, options, checkedIds, onChange) {
     label.append(text);
     container.append(label);
   }
+}
+
+/** X-axis control (#x-options); the selection is written to `state.x`. */
+function buildXControl(state, render) {
+  radioGroup($('x-options'), 'x',
+    Object.entries(X_AXES).map(([id, label]) => ({ id, label })),
+    state.x, (id) => { state.x = id; render(); });
+}
+
+/** Color (and optional line-style) filters, which double as the chart legend. */
+function buildDimensionControls(state, render) {
+  const a = AGING[state.type];
+  $('color-title').textContent = a.color.title;
+  checkGroup($('color-options'),
+    a.color.values.map((v, i) => ({ id: v.id, label: v.label, key: { colorVar: seriesVar(i) } })),
+    state.color, (ids) => { state.color = ids; render(); });
+
+  $('dash-group').hidden = !a.dash;
+  if (a.dash) {
+    $('dash-title').textContent = a.dash.title;
+    checkGroup($('dash-options'),
+      a.dash.values.map((v) => ({ id: v.id, label: v.label, key: { dash: v.css } })),
+      state.dash, (ids) => { state.dash = ids; render(); });
+  }
+}
+
+/**
+ * Build the filter controls both pages share: aging type, temperature, x axis,
+ * and the color and line-style filters. Selections are written to `state`
+ * (type, temp, x, color, dash) and `render` is called after each change.
+ * Changing the aging type resets the other selections to that type's defaults.
+ */
+export function buildFilterControls(state, render) {
+  radioGroup($('type-options'), 'type',
+    Object.entries(AGING).map(([id, a]) => ({ id, label: a.label })),
+    state.type, (id) => {
+      state.type = id;
+      Object.assign(state, typeDefaults(id));
+      buildXControl(state, render);
+      buildDimensionControls(state, render);
+      render();
+    });
+
+  radioGroup($('temp-options'), 'temp',
+    TEMPERATURES.map((t) => ({ id: String(t), label: `${t} °C` })),
+    String(state.temp), (id) => { state.temp = Number(id); render(); });
+
+  buildXControl(state, render);
+  buildDimensionControls(state, render);
+}
+
+// ---------------------------------------------------------------------------
+// Charts
+// ---------------------------------------------------------------------------
+
+/** Plotly layout fields common to every chart. */
+export function baseLayout(narrow) {
+  const surface = cssVar('--surface');
+  return {
+    paper_bgcolor: surface,
+    plot_bgcolor: surface,
+    font: { family: FONT, size: 12, color: cssVar('--ink-2') },
+    height: narrow ? 360 : 520,
+    hovermode: 'closest',
+    hoverdistance: 30,
+  };
+}
+
+/** Plotly axis fields common to every chart axis. */
+export const axisStyle = () => ({
+  gridcolor: cssVar('--grid'), linecolor: cssVar('--axis'), tickcolor: cssVar('--axis'), ticks: 'outside', zeroline: false,
+});
+
+/** Plotly hover-label style with the given border color. */
+export function hoverLabel(borderColor) {
+  return { bgcolor: cssVar('--surface'), bordercolor: borderColor, font: { color: cssVar('--ink'), family: FONT, size: 12 } };
+}
+
+/** Line color, Plotly dash, direct-label text and label-group key of one cell's series. */
+export function seriesStyle(type, cond) {
+  const a = AGING[type];
+  const colorIndex = a.color.values.findIndex((v) => v.id === a.color.of(cond));
+  const dashValue = a.dash ? a.dash.values.find((v) => v.id === a.dash.of(cond)) : null;
+  return {
+    color: cssVar(seriesVar(colorIndex)),
+    dash: dashValue ? dashValue.plotly : 'solid',
+    label: a.color.values[colorIndex].short,
+    group: `${a.color.of(cond)}/${dashValue ? dashValue.id : ''}`,
+  };
+}
+
+/** Per color/line-style group, remember the end point of its longest line, for the direct labels. */
+export function trackLongest(groups, style, pts) {
+  const last = pts[pts.length - 1];
+  const longest = groups.get(style.group);
+  if (!longest || last.x > longest.last.x) groups.set(style.group, { last, label: style.label });
+}
+
+/** Direct labels at the end of each group's longest line; none on narrow screens or when too many groups would crowd the plot. */
+export function directLabels(groups, narrow) {
+  if (narrow || groups.size < 1 || groups.size > 4) return [];
+  const ink2 = cssVar('--ink-2');
+  return [...groups.values()].map((g) => ({
+    x: g.last.x, y: g.last.y, text: g.label, showarrow: false,
+    xanchor: 'left', xshift: 8, font: { size: 11, color: ink2, family: FONT },
+  }));
+}
+
+/** Draw the chart in #chart, first clearing a load-error notice left there by an earlier failure. */
+export function drawChart(traces, layout) {
+  const chart = $('chart');
+  if (chart.querySelector('.notice')) {
+    Plotly.purge(chart);
+    chart.replaceChildren();
+  }
+  return Plotly.react(chart, traces, layout, { displayModeBar: false, responsive: true });
+}
+
+// ---------------------------------------------------------------------------
+// Tables
+// ---------------------------------------------------------------------------
+
+/** Fill `table` with a header row and body rows of text; columns after the first are right-aligned. */
+export function fillTable(table, head, rows) {
+  const thead = document.createElement('thead');
+  const hr = document.createElement('tr');
+  head.forEach((h, i) => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    th.scope = 'col';
+    if (i > 0) th.className = 'num';
+    hr.append(th);
+  });
+  thead.append(hr);
+
+  const tbody = document.createElement('tbody');
+  for (const values of rows) {
+    const tr = document.createElement('tr');
+    values.forEach((v, i) => {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (i > 0) td.className = 'num';
+      tr.append(td);
+    });
+    tbody.append(tr);
+  }
+  table.replaceChildren(thead, tbody);
 }
