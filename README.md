@@ -1,6 +1,6 @@
 # Battery Aging Explorer
 
-An interactive explorer analyzing and displaying battery aging behavior: capacity fade and impedance from the KIT NMC/C-SiO aging dataset. 
+Interactive views of capacity fade and impedance in the KIT NMC/C-SiO aging dataset (228 cells), with the Python script that prepares the data. Live site: https://sameffman.github.io/battery-aging-explorer/
 
 ## Data Attribution and Licensing
 The data is obtained from: Luh, M. & Blank, T. Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell [dataset – version 2: result data]. RADAR4KIT https://doi.org/10.35097/1969 (2024).

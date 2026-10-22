@@ -77,15 +77,7 @@
   </p>
 </main>
 
-<script>
-  // ES modules and fetch() are blocked for pages opened from disk; say so instead of showing an empty chart.
-  if (location.protocol === 'file:') {
-    document.getElementById('chart').innerHTML =
-      '<div class="notice"><p>This page needs to be served over HTTP. From the project folder run ' +
-      '<code>python3 -m http.server</code> and open ' +
-      '<code>http://localhost:8000/' + location.pathname.split('/').pop() + '</code>.</p></div>';
-  }
-</script>
+<script src="file-notice.js"></script>
 <script type="module">
 import {
   $, FONT, MANUAL_CU, LAST_REGULAR_CU, X_AXES, loadJson, showLoadError, cssVar, isNarrow, watchDisplay,

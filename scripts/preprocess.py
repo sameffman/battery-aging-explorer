@@ -21,24 +21,24 @@ Conventions used (each one is stated here so it can be checked):
     P011-3 (2.667323 Ah in CU 23, 2.688292 Ah in CU 24). CU 29 is the manual check-up (readme).
   * Capacity = cap_aged_est_Ah from the check-up capacity runs (cyc_condition == 2).
     Each check-up has a charge-direction value (cyc_charged = 1) and a discharge value (= 0).
-    The discharge value is the one used for the 80 % point and for the readme cross-check.
+    The discharge value is the one used for the 80% point and for the readme cross-check.
   * Equivalent full cycles (EFC) = mean(total charged, total discharged throughput) / 3.0 Ah,
     as defined in the dataset readme (total_q_chg_sum_Ah, total_q_dischg_sum_Ah).
   * Check-up numbers and start times come from every check-up capacity-run row, valid or not.
     Impedance measurements take their check-up number from those start times.
     A check-up with no valid capacity in either direction is kept with null values and reported.
-  * 80 % point: the first discharge capacity below 80 % of a reference capacity, linearly
+  * 80% point: the first discharge capacity below 80% of a reference capacity, linearly
     interpolated between the two check-ups either side of the crossing. CU 29 is not used.
     Two references are computed and stored side by side:
       - initial: the cell's own first valid discharge capacity (usually CU 1)  -> "eol80_initial"
-      - nominal: 80 % of the 3.0 Ah nominal capacity, i.e. 2.4 Ah -> "eol80_nominal". The authors'
-                 paper defines its SoH scale against nominal capacity; the 80 % threshold on that
+      - nominal: 80% of the 3.0 Ah nominal capacity, i.e. 2.4 Ah -> "eol80_nominal". The authors'
+                 paper defines its SoH scale against nominal capacity; the 80% threshold on that
                  reference is this project's choice, not theirs.
   * EIS resistances (eis_r.json), calculated from each stored spectrum. Definitions follow the dataset
     authors' example scripts (github.com/energystatusdata/bat-age-data-scripts, generate_log_age.py),
     with a modified R1 search. Implementation is independent of that code.
       - R0: real part where the spectrum crosses the real axis, linearly interpolated between the two
-            neighbouring points, searched between 200 Hz and 3.3 kHz.
+            neighboring points, searched between 200 Hz and 3.3 kHz.
       - R1: real part at the knee of the spectrum, minus R0. The knee is the point of smallest phase
             angle among local minima of the phase at or below 33 Hz. A local minimum needs a point
             on each side inside that range, so the range's end points never qualify. If that knee has
