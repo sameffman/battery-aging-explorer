@@ -59,7 +59,10 @@ L_REFERENCE = 1                       # index into L_MIN_FREQS of the window who
 CHECKUP_GROUPS = {"early": (1, 5), "mid": (10, 20), "late": (22, 28)}
 TAILS = {"cpe": 2, "warburg": 1, "finite": 2}   # tail element -> number of fitted tail parameters
 L_MODES = ("fixed", "free")
-BOUND_TOLERANCE = 1e-6                # relative distance to a bound that counts as being at it
+TAU1_MIN = 1e-5                       # s, lower bound of the time constant of the first arc
+RATIO_MAX = 1e3                       # upper bound of tau2 / tau1
+BOUND_TOLERANCE = 1e-6                # distance to a bound that counts, during a fit, as being at it
+LIMIT_TOLERANCE = 1e-3                # relative distance to a limit that the summary counts as being at it (stored values are rounded)
 NH_PER_UNIT = 1e6                     # mOhm / (rad/s) -> nH
 MOHM_PER_NH_RAD = 1e-6                # w * L[nH] -> mOhm
 
@@ -142,11 +145,11 @@ def circuit_fit(f, re, im, tail, n_arcs, l_mode, l_fixed):
     tail_lo, tail_hi = {"cpe": ([1e-3, 0.3], [1e4, 1.0]),
                         "warburg": ([1e-3], [1e3]),
                         "finite": ([1e-3, 1e-2], [1e4, 1e6])}[tail]
-    lo = [0.5, 1e-3, 1e-5, 0.3]                 # R0, R1, tau1, alpha1
+    lo = [0.5, 1e-3, TAU1_MIN, 0.3]              # R0, R1, tau1, alpha1
     hi = [100, 500, 0.3, 1.0]
     if n_arcs == 2:
         lo += [1e-3, 1.0, 0.3]                  # R2, ratio tau2 / tau1, alpha2
-        hi += [500, 1e3, 1.0]
+        hi += [500, RATIO_MAX, 1.0]
     n_arc_params = len(lo)
     lo, hi = lo + tail_lo, hi + tail_hi
     if l_mode == "free":
@@ -320,10 +323,10 @@ def two_arc_summary(ok):
                 "a1": quartiles([f["a1"] for f in arc]),
                 "a2": quartiles([f["a2"] for f in arc]),
                 "tau_ratio": quartiles([f["tau2"] / f["tau1"] for f in arc]),
-                "a1_at_upper_bound": sum(f["a1"] >= 0.99 for f in arc),
-                "a2_at_upper_bound": sum(f["a2"] >= 0.99 for f in arc),
-                "tau_ratio_at_upper_bound": sum(f["tau2"] / f["tau1"] >= 999 for f in arc),
-                "tau1_at_lower_bound": sum(f["tau1"] <= 1.01e-5 for f in arc),
+                "a1_at_upper_bound": sum(f["a1"] >= 1 - LIMIT_TOLERANCE for f in arc),
+                "a2_at_upper_bound": sum(f["a2"] >= 1 - LIMIT_TOLERANCE for f in arc),
+                "tau_ratio_at_upper_bound": sum(f["tau2"] / f["tau1"] >= RATIO_MAX * (1 - LIMIT_TOLERANCE) for f in arc),
+                "tau1_at_lower_bound": sum(f["tau1"] <= TAU1_MIN * (1 + LIMIT_TOLERANCE) for f in arc),
                 "at_bound": sum(f["at_bound"] for f in arc),
                 "R1_plus_R2_over_model_free_R1": quartiles([(f["R1"] + f["R2"]) / r["r1"] for r, f in zip(ok, arc)]),
                 "R1_over_model_free_R1": quartiles([f["R1"] / r["r1"] for r, f in zip(ok, arc)]),
@@ -335,7 +338,7 @@ def two_arc_summary(ok):
                     "better_than_one_arc": sum(r["fits"][two]["rms_pct"] < r["fits"][one]["rms_pct"] for r in ok),
                     "R0_minus_one_arc": quartiles([r["fits"][two]["R0"] - r["fits"][one]["R0"] for r in ok]),
                     "tail_exponent": quartiles([f["tail"][1] for f in arc]),
-                    "tail_exponent_at_upper_bound": sum(f["tail"][1] >= 0.99 for f in arc)})
+                    "tail_exponent_at_upper_bound": sum(f["tail"][1] >= 1 - LIMIT_TOLERANCE for f in arc)})
             out[f"{tail}_{mode}"] = entry
     fixed, free = (variant_id("cpe", 2, mode) for mode in L_MODES)
     out["free_L_over_hf_L"] = quartiles([r["fits"][free]["L"] / r["L_hf"] for r in ok])

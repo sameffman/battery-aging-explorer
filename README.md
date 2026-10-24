@@ -37,7 +37,7 @@ R0 and R1 are read directly from the measured spectra and are not fitted circuit
 #### Equivalent-Circuit Fits
 `scripts/fit_circuits.py` fits equivalent circuits to the impedance spectra, and the [Circuit fits page](https://sameffman.github.io/battery-aging-explorer/circuit-fits.html) shows the results. The inductance is fitted first, from the high-frequency end of each of the 39,293 spectra (windows from 1, 3 and 5 kHz). It is then fixed or freed in a fit of the circuit L − R0 − (R1 || CPE1) − (R2 || CPE2) − tail, with the one-arc circuit and the CPE tail fitted as a reference. Three tail elements are compared: a constant-phase element (CPE) with free exponent, a semi-infinite Warburg element and a finite-space Warburg element. The full fits use a seeded random sample of 262 spectra.
 
-- The inductance is 199 nH (median). It spans 183 to 222 nH between cells (5th to 95th percentile), is 7 nH within a cell, and does not depend on state of charge or measurement temperature.
+- The inductance is 199 nH (median). It spans 183 to 222 nH between cells (5th to 95th percentile), is 7 nH within a cell, and varies little with state of charge or measurement temperature.
 - Two arcs fit better than one: with a CPE tail the misfit is lower in 259 of 262 spectra with L fixed and 252 with L free, and the median is 1.16% against 1.42% (L fixed). The first exponent rises from a median of 0.59 with one arc to 0.93 with two.
 - The CPE tail fits better than the Warburg tail: the Warburg misfit is a median 6% higher with L fixed and 10% higher with L free. The finite-space tail is within 2% of the CPE.
 - Letting L float moves it a median of 5% above the high-frequency value and lowers the misfit by a median of 16%.
