@@ -30,46 +30,12 @@
     Three elements for the low-frequency tail are compared, and the circuit with one arc is fitted as a reference for what the second arc adds.
   </p>
 
-  <h2>Weak points</h2>
-  <ul class="notes">
-    <li><strong>The fit is not exact.</strong> The median misfit of the two-arc fit with a CPE tail is 1.16% of |Z| with L fixed and 0.99% with L free, and 2.0% and 1.5% at the 90th percentile. The residuals were not examined for systematic structure beyond the example spectra in the viewer.</li>
-    <li><strong>Many fits end at a bound.</strong> 118 of 262 two-arc CPE fits with L fixed, and 132 with L free, have at least one parameter at a limit of its range. The first-arc exponent α1 is at its upper limit of 1 in 94 (L fixed) and 50 (L free) of 262 fits, and the CPE tail exponent in 22 and 39. For these fits the parameter is not determined by the data inside its range.</li>
-    <li><strong>The split into two arcs depends on L.</strong> With L free, the median α1 falls from 0.93 to 0.68 and the median R1 rises from 2.8 to 4.9 mΩ. R1 and R2 are therefore not reliable individually. Their sum, and the misfit, change less.</li>
-    <li><strong>R2 is only moderately determined.</strong> The formal standard error of R2 is a median 28% of R2 with L fixed and 43% with L free; it is as large as R2 itself in 7 and 58 of 262 fits. These errors assume the circuit is correct.</li>
-    <li><strong>The sample is 262 of 39,293 spectra</strong>, and the 60 sampled spectra with fewer than 28 points were left out.</li>
-  </ul>
-
-  <h2>Findings</h2>
-  <ul class="notes">
-    <li><strong>Inductance.</strong> The high-frequency inductance is 199 nH (median of the 3 kHz window over all 39,293 spectra). The windows from 1, 3 and 5 kHz give 195, 199 and 200 nH, and the misfit of the high-frequency line falls from 0.60 to 0.15 mΩ as the window moves up. Between cells it spans 183 to 222 nH (5th to 95th percentile of the cell medians); within a cell the median standard deviation is 7 nH. It varies little with state of charge (medians 197.7 to 199.5 nH) or with whether the spectrum was measured at room or aging temperature (198.4 and 198.8 nH). Pair by pair (same cell, check-up and state of charge), the spectrum measured at aging temperature gives a median L 1.3, 0.6, 0.2 and 1.1 nH above the room-temperature one for cells aged at 0, 10, 25 and 40 °C. It rises slightly with aging, by a median of 6 nH from check-ups 1–3 to 25–28; the cause was not investigated.</li>
-    <li><strong>Two arcs fit better than one.</strong> The circuit with a second R || CPE element has a lower misfit than the one-arc circuit in 259 of 262 spectra with L fixed and 252 with L free (CPE tail). The median misfit is 1.16% against 1.42% with L fixed, and 0.99% against 1.21% with L free. The ratio of the two misfits has a median of 0.87 (10th to 90th percentile: 0.70 to 0.95) with L fixed. The misfit is adjusted for the three extra parameters; no formal model-selection test was run.</li>
-    <li><strong>The depressed single arc becomes two arcs.</strong> In the one-arc fit the exponent of the first element has a median of 0.59, which is a strongly flattened arc. With a second arc the median α1 is 0.93 (L fixed) and the median α2 is 0.79. The time constant of the second arc is a median 21 times that of the first (10th to 90th percentile: 9 to 265). This is consistent with two overlapping processes, but the fit does not identify them.</li>
-    <li><strong>Low-frequency tail.</strong> With two arcs, a CPE tail with a free exponent fits better than a semi-infinite Warburg tail: the Warburg misfit is a median 6% higher with L fixed and 10% higher with L free, and lower in only 23 and 15 of 262 spectra, although the CPE has one more parameter. A finite-space tail is within 2% of the CPE in the median and is better in 66 (L fixed) and 70 (L free) spectra, so the data do not separate the two. The CPE tail exponent has a median of 0.65 with L fixed (10th to 90th percentile: 0.55 to 0.92).</li>
-    <li><strong>Fixing or freeing L.</strong> When L is free it ends above the high-frequency value by a median of 5% (10th to 90th percentile: 1% to 15%) in the two-arc CPE fit, and the misfit falls by a median of 16%. The test does not separate two explanations: the full fit absorbs some model error into L, or the high-frequency estimate is biased low. With L free the split between the arcs changes, as noted above.</li>
-    <li><strong>R0 and R1 + R2.</strong> In the two-arc CPE fit with L fixed, the fitted R0 is lower than the value read directly from the spectrum by a median of 0.87 mΩ (10th to 90th percentile: 0.49 to 1.59 mΩ) and higher than in the one-arc fit by a median of 0.34 mΩ. The sum R1 + R2 is a median 1.09 times the directly read R1 (CPE tail; 0.98 with the Warburg tail and 0.99 with the finite-space tail), whereas R1 alone is a median 0.35 times that value. The directly read R1 therefore corresponds roughly to the first two arcs together.</li>
-    <li><strong>Quality of fit by condition.</strong> The misfit of the two-arc CPE fit with L fixed is larger for spectra measured at the aging temperature (1.34%) than at room temperature (1.08%), and larger for cells aged at 0 and 10 °C than at 25 and 40 °C (1.54%, 1.47%, 1.11% and 1.05%; one arc: 1.82%, 1.69%, 1.30% and 1.30%). It does not change systematically with check-up group (1.18%, 1.13% and 1.21% for check-ups 1–5, 10–20 and 22–28).</li>
-  </ul>
-
-  <h2>Step 1: inductance from the high-frequency limit</h2>
-  <p>
-    Above about 1 kHz the spectra dip below the real axis, where Z = R0 + jωL. L is the least-squares slope of the stored −Im(Z) against ω = 2πf,
-    through the origin, over the points at or above a minimum frequency. It was fitted this way for every spectrum, with three nested windows.
-    Fitting L first separates a simple feature that likely depends more on wiring and instrumentation than on chemistry. If it is stable, it can be fixed in the
-    full fit, which leaves fewer free parameters for the arcs, where the fit is least certain. The risk is the opposite one: capacitive contribution from the
-    arcs may add positive Im at the low end of a window and bias L low, so the windows are compared. Their medians differ by about 4 nH (195.3 nH from 1 kHz, 199.7 nH from 5 kHz).
-  </p>
-  <div class="chart-card"><div id="chart-l" role="img" aria-label="Histogram of the fitted high-frequency inductance in nanohenries for three fitting windows. A table with the medians follows."></div></div>
-  <p class="summary" id="summary-l" aria-live="polite"></p>
-  <div class="table-wrap"><table id="table-l"></table></div>
-
-  <h2>Step 2: fits of the whole circuit</h2>
+  <h2>The circuit</h2>
   <p>
     The circuit is L − R0 − (R1 || CPE1) − (R2 || CPE2) − tail. Each arc is a resistor in parallel with a CPE, R / (1 + (jωτ)<sup>α</sup>), with α between 0.3 and 1.
     The second arc is kept slower than the first (τ2 = τ1 × a ratio between 1 and 1000), so that the two cannot swap. The tail is one of three elements: a CPE with free exponent n;
     a semi-infinite Warburg element (a CPE with n = 0.5); or a finite-space Warburg element with a blocking boundary, which is a 45° line at high frequency and vertical at low frequency.
     L is either fixed at the 3 kHz value from step 1 or free. That gives six variants. The one-arc circuit L − R0 − (R1 || CPE1) − CPE tail, with L fixed or free, is fitted in the same way as a reference.
-    Each fit uses all 28 points of a spectrum, complex residuals weighted by 1/|Z|, and several starting points.
-    The misfit shown is the root-mean-square of |Z<sub>model</sub> − Z| / |Z|, adjusted for the number of fitted parameters.
   </p>
   <figure class="circuit-figure">
     <div class="chart-card">
@@ -106,9 +72,47 @@
       </svg>
     </div>
     <figcaption class="summary">
-      The circuit of step 2. The tail is a CPE, a semi-infinite Warburg element or a finite-space Warburg element. The one-arc reference circuit leaves out R2 and CPE2.
+      The fitted circuit. The tail is a CPE, a semi-infinite Warburg element or a finite-space Warburg element. The one-arc reference circuit leaves out R2 and CPE2.
     </figcaption>
   </figure>
+
+  <h2>Weak points</h2>
+  <ul class="notes">
+    <li><strong>The fit is not exact.</strong> The median misfit of the two-arc fit with a CPE tail is 1.16% of |Z| with L fixed and 0.99% with L free, and 2.0% and 1.5% at the 90th percentile. The residuals were not examined for systematic structure beyond the example spectra in the viewer.</li>
+    <li><strong>Many fits end at a bound.</strong> 118 of 262 two-arc CPE fits with L fixed, and 132 with L free, have at least one parameter at a limit of its range. The first-arc exponent α1 is at its upper limit of 1 in 94 (L fixed) and 50 (L free) of 262 fits, and the CPE tail exponent in 22 and 39. For these fits the parameter is not determined by the data inside its range.</li>
+    <li><strong>The split into two arcs depends on L.</strong> With L free, the median α1 falls from 0.93 to 0.68 and the median R1 rises from 2.8 to 4.9 mΩ. R1 and R2 are therefore not reliable individually. Their sum, and the misfit, change less.</li>
+    <li><strong>R2 is only moderately determined.</strong> The formal standard error of R2 is a median 28% of R2 with L fixed and 43% with L free; it is as large as R2 itself in 7 and 58 of 262 fits. These errors assume the circuit is correct.</li>
+    <li><strong>The sample is 262 of 39,293 spectra</strong>, and the 60 sampled spectra with fewer than 28 points were left out.</li>
+  </ul>
+
+  <h2>Findings</h2>
+  <ul class="notes">
+    <li><strong>Inductance.</strong> The high-frequency inductance is 199 nH (median of the 3 kHz window over all 39,293 spectra). The windows from 1, 3 and 5 kHz give 195, 199 and 200 nH, and the misfit of the high-frequency line falls from 0.60 to 0.15 mΩ as the window moves up. Between cells it spans 183 to 222 nH (5th to 95th percentile of the cell medians); within a cell the median standard deviation is 7 nH. It varies little with state of charge (medians 197.7 to 199.5 nH) or with whether the spectrum was measured at room or aging temperature (198.4 and 198.8 nH). Pair by pair (same cell, check-up and state of charge), the spectrum measured at aging temperature gives a median L 1.3, 0.6, 0.2 and 1.1 nH above the room-temperature one for cells aged at 0, 10, 25 and 40 °C. It rises slightly with aging, by a median of 6 nH from check-ups 1–3 to 25–28; the cause was not investigated.</li>
+    <li><strong>Two arcs fit better than one.</strong> The circuit with a second R || CPE element has a lower misfit than the one-arc circuit in 259 of 262 spectra with L fixed and 252 with L free (CPE tail). The median misfit is 1.16% against 1.42% with L fixed, and 0.99% against 1.21% with L free. The ratio of the two misfits has a median of 0.87 (10th to 90th percentile: 0.70 to 0.95) with L fixed. The misfit is adjusted for the three extra parameters; no formal model-selection test was run.</li>
+    <li><strong>The depressed single arc becomes two arcs.</strong> In the one-arc fit the exponent of the first element has a median of 0.59, which is a strongly flattened arc. With a second arc the median α1 is 0.93 (L fixed) and the median α2 is 0.79. The time constant of the second arc is a median 21 times that of the first (10th to 90th percentile: 9 to 265). This is consistent with two overlapping processes, but the fit does not identify them.</li>
+    <li><strong>Low-frequency tail.</strong> With two arcs, a CPE tail with a free exponent fits better than a semi-infinite Warburg tail: the Warburg misfit is a median 6% higher with L fixed and 10% higher with L free, and lower in only 23 and 15 of 262 spectra, although the CPE has one more parameter. A finite-space tail is within 2% of the CPE in the median and is better in 66 (L fixed) and 70 (L free) spectra, so the data do not separate the two. The CPE tail exponent has a median of 0.65 with L fixed (10th to 90th percentile: 0.55 to 0.92).</li>
+    <li><strong>Fixing or freeing L.</strong> When L is free it ends above the high-frequency value by a median of 5% (10th to 90th percentile: 1% to 15%) in the two-arc CPE fit, and the misfit falls by a median of 16%. The test does not separate two explanations: the full fit absorbs some model error into L, or the high-frequency estimate is biased low. With L free the split between the arcs changes, as noted above.</li>
+    <li><strong>R0 and R1 + R2.</strong> In the two-arc CPE fit with L fixed, the fitted R0 is lower than the value read directly from the spectrum by a median of 0.87 mΩ (10th to 90th percentile: 0.49 to 1.59 mΩ) and higher than in the one-arc fit by a median of 0.34 mΩ. The sum R1 + R2 is a median 1.09 times the directly read R1 (CPE tail; 0.98 with the Warburg tail and 0.99 with the finite-space tail), whereas R1 alone is a median 0.35 times that value. The directly read R1 therefore corresponds roughly to the first two arcs together.</li>
+    <li><strong>Quality of fit by condition.</strong> The misfit of the two-arc CPE fit with L fixed is larger for spectra measured at the aging temperature (1.34%) than at room temperature (1.08%), and larger for cells aged at 0 and 10 °C than at 25 and 40 °C (1.54%, 1.47%, 1.11% and 1.05%; one arc: 1.82%, 1.69%, 1.30% and 1.30%). It does not change systematically with check-up group (1.18%, 1.13% and 1.21% for check-ups 1–5, 10–20 and 22–28).</li>
+  </ul>
+
+  <h2>Step 1: inductance from the high-frequency limit</h2>
+  <p>
+    Above about 1 kHz the spectra dip below the real axis, where Z = R0 + jωL. L is the least-squares slope of the stored −Im(Z) against ω = 2πf,
+    through the origin, over the points at or above a minimum frequency. It was fitted this way for every spectrum, with three nested windows.
+    Fitting L first separates a simple feature that likely depends more on wiring and instrumentation than on chemistry. If it is stable, it can be fixed in the
+    full fit, which leaves fewer free parameters for the arcs, where the fit is least certain. The risk is the opposite one: capacitive contribution from the
+    arcs may add positive Im at the low end of a window and bias L low, so the windows are compared. Their medians differ by about 4 nH (195.3 nH from 1 kHz, 199.7 nH from 5 kHz).
+  </p>
+  <div class="chart-card"><div id="chart-l" role="img" aria-label="Histogram of the fitted high-frequency inductance in nanohenries for three fitting windows. A table with the medians follows."></div></div>
+  <p class="summary" id="summary-l" aria-live="polite"></p>
+  <div class="table-wrap"><table id="table-l"></table></div>
+
+  <h2>Step 2: fits of the whole circuit</h2>
+  <p>
+    Each fit uses all 28 points of a spectrum, complex residuals weighted by 1/|Z|, and several starting points.
+    The misfit shown is the root-mean-square of |Z<sub>model</sub> − Z| / |Z|, adjusted for the number of fitted parameters.
+  </p>
   <p>
     Fitting every spectrum would take many hours, so the fits use a random sample (fixed seed): one random cell per aging condition and, for each
     group of check-ups (1–5, 10–20, 22–28) and each measurement temperature, one random spectrum at any state of charge. That is 322 spectra; the 262 with all
