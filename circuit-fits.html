@@ -71,6 +71,44 @@
     Each fit uses all 28 points of a spectrum, complex residuals weighted by 1/|Z|, and several starting points.
     The misfit shown is the root-mean-square of |Z<sub>model</sub> − Z| / |Z|, adjusted for the number of fitted parameters.
   </p>
+  <figure class="circuit-figure">
+    <div class="chart-card">
+      <svg class="circuit" viewBox="0 0 600 150" role="img" aria-labelledby="circuit-title">
+        <title id="circuit-title">Equivalent circuit: an inductance L, a resistance R0, two elements each made of a resistor in parallel with a constant-phase element (R1 and CPE1, R2 and CPE2), and a low-frequency tail, all in series.</title>
+        <g class="wire">
+          <circle cx="12" cy="75" r="4"/>
+          <path d="M16 75H30"/>
+          <path d="M30 75a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0a10 10 0 0 1 20 0"/>
+          <path d="M110 75H130"/>
+          <path d="M130 75h5l6-12l10 24l10-24l10 24l6-12h5"/>
+          <path d="M182 75H200"/>
+          <path d="M200 45V105M330 45V105M460 45V105"/>
+          <path d="M200 45H239M291 45H330"/>
+          <path d="M239 45l6-12l10 24l10-24l10 24l6-12"/>
+          <path d="M200 105H254M268 105H330"/>
+          <path d="M260 90l-4 30M274 90l-4 30"/>
+          <path d="M330 45H369M421 45H460"/>
+          <path d="M369 45l6-12l10 24l10-24l10 24l6-12"/>
+          <path d="M330 105H384M398 105H460"/>
+          <path d="M390 90l-4 30M404 90l-4 30"/>
+          <path d="M460 75H490"/>
+          <rect x="490" y="60" width="60" height="30" rx="3"/>
+          <path d="M550 75H584"/>
+          <circle cx="588" cy="75" r="4"/>
+        </g>
+        <text x="70" y="52" text-anchor="middle">L</text>
+        <text x="156" y="52" text-anchor="middle">R0</text>
+        <text x="265" y="24" text-anchor="middle">R1</text>
+        <text x="265" y="143" text-anchor="middle">CPE1</text>
+        <text x="395" y="24" text-anchor="middle">R2</text>
+        <text x="395" y="143" text-anchor="middle">CPE2</text>
+        <text x="520" y="80" text-anchor="middle">tail</text>
+      </svg>
+    </div>
+    <figcaption class="summary">
+      The circuit of step 2. The tail is a CPE, a semi-infinite Warburg element or a finite-space Warburg element. The one-arc reference circuit leaves out R2 and CPE2.
+    </figcaption>
+  </figure>
   <p>
     Fitting every spectrum would take many hours, so the fits use a random sample (fixed seed): one random cell per aging condition and, for each
     group of check-ups (1–5, 10–20, 22–28) and each measurement temperature, one random spectrum at any state of charge. That is 322 spectra; the 262 with all

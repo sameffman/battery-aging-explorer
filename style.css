@@ -171,3 +171,9 @@ blockquote.citation {
 .ramp { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
 .ramp[hidden] { display: none; }
 .ramp-bar { flex: 0 1 220px; height: 8px; border-radius: 4px; }
+
+/* Equivalent-circuit diagram on the circuit fits page. */
+.circuit { display: block; width: 100%; max-width: 640px; height: auto; margin: 0 auto; }
+.circuit .wire { fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.circuit text { fill: var(--ink); font: 20px system-ui, -apple-system, "Segoe UI", sans-serif; }
+figure.circuit-figure { margin: 16px 0 0; }
