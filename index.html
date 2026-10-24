@@ -15,6 +15,7 @@
       <a href="index.html" aria-current="page">Home</a>
       <a href="capacity.html">Capacity fade</a>
       <a href="impedance.html">Impedance</a>
+      <a href="circuit-fits.html">Circuit fits</a>
     </nav>
   </div>
 </header>
@@ -40,6 +41,12 @@
         <p>R0 (ohmic) and R1 (from the real-axis intercept to the knee, the point of lowest phase angle) from impedance spectra against aging, plus Nyquist plots of individual spectra.</p>
       </a>
     </li>
+    <li class="card">
+      <a class="stretch" href="circuit-fits.html">
+        <h3>Circuit fits</h3>
+        <p>Equivalent-circuit fits of the impedance spectra: inductance from the high-frequency limit, then two-arc circuits with three low-frequency tail elements compared on a random sample of spectra.</p>
+      </a>
+    </li>
   </ul>
 
   <h2 id="about">About the data</h2>
@@ -55,11 +62,11 @@
   <p>
     Periodically each cell goes through a check-up: a capacity measurement at room temperature, electrochemical impedance
     spectroscopy at five states of charge, and current-pulse resistance measurements. The pages here show the capacity and
-    impedance results; the pulse measurements and the continuous cycling data are not used.
+    impedance results, and the circuit fits of the spectra; the pulse measurements and the continuous cycling data are not used.
   </p>
   <p>
     The raw result files are reduced to compact JSON by <code>scripts/preprocess.py</code>, which selects the check-up values,
-    numbers the check-ups, computes equivalent full cycles, interpolates the 80% capacity point and reads R0 and R1 from the impedance spectra. The pages read only those JSON files in the browser.
+    numbers the check-ups, computes equivalent full cycles, interpolates the 80% capacity point and reads R0 and R1 from the impedance spectra. <code>scripts/fit_circuits.py</code> then fits equivalent circuits to the spectra. The pages read only the resulting JSON files in the browser.
   </p>
 
   <h2>Source and license</h2>

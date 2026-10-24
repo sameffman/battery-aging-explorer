@@ -108,7 +108,7 @@ p { max-width: 75ch; }
   border-radius: 8px;
   padding: 12px 8px 4px;
 }
-#chart { width: 100%; min-height: 420px; }
+#chart, #chart-l { width: 100%; min-height: 420px; }
 .summary { margin: 12px 0 0; color: var(--ink-2); font-size: 14px; max-width: none; }
 .notice {
   padding: 16px;
@@ -152,7 +152,7 @@ blockquote.citation {
 
 @media (max-width: 600px) {
   h1 { font-size: 24px; }
-  #chart { min-height: 360px; }
+  #chart, #chart-l { min-height: 360px; }
 }
 
 /* Wide tables keep the row label visible while scrolling horizontally. */

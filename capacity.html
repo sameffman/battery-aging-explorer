@@ -17,6 +17,7 @@
       <a href="index.html">Home</a>
       <a href="capacity.html" aria-current="page">Capacity fade</a>
       <a href="impedance.html">Impedance</a>
+      <a href="circuit-fits.html">Circuit fits</a>
     </nav>
   </div>
 </header>
@@ -50,7 +51,7 @@
   <details>
     <summary>Notes on the data</summary>
     <ul class="notes">
-      <li><strong>Capacity</strong> is the dataset's estimate (<code>cap_aged_est_Ah</code>) from the discharge at each room-temperature check-up. The check-ups themselves age the cells.</li>
+      <li><strong>Capacity</strong> is the dataset's estimate (<code>cap_aged_est_Ah</code>) from the discharge at each room-temperature check-up. The check-ups likely age the cells themselves: according to the dataset authors, each includes a 0–100–0% cycle for the capacity measurement and a 10–90–10% cycle to reach the impedance states of charge.</li>
       <li><strong>Check-up numbers</strong> run from CU 1 to CU 28, plus CU 29, a manual check-up performed at room temperature with air cooling. CU 29 is drawn but excluded from the 80% point, and marked “manual” in the tooltip.</li>
       <li><strong>80% point:</strong> the first discharge capacity below 80% of a reference capacity, linearly interpolated between the two neighboring check-ups. Cells that never drop below it within the data have no marker.</li>
       <li><strong>80% reference:</strong> by default each cell is measured against its own first discharge capacity (CU 1 for every cell). Each cell's threshold is then 80% of its own first capacity, so the thresholds differ slightly between cells, the chart has no single threshold line, and the diamonds sit at those heights. The alternative is the 3.0 Ah nominal capacity, a fixed 2.4 Ah line. It is the reference of the state-of-health scale in the dataset authors' paper, but the 80% threshold on it is this project's choice, not the authors'. Cells start slightly below 3.0 Ah, so against their own capacity they cross later, and a few cells reach 2.4 Ah without reaching 80% of their own first capacity. The dataset's own state-of-health column is not used.</li>

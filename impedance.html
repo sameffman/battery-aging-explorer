@@ -17,6 +17,7 @@
       <a href="index.html">Home</a>
       <a href="capacity.html">Capacity fade</a>
       <a href="impedance.html" aria-current="page">Impedance</a>
+      <a href="circuit-fits.html">Circuit fits</a>
     </nav>
   </div>
 </header>
@@ -80,7 +81,7 @@
 <script src="file-notice.js"></script>
 <script type="module">
 import {
-  $, FONT, MANUAL_CU, LAST_REGULAR_CU, X_AXES, loadJson, showLoadError, cssVar, isNarrow, watchDisplay,
+  $, FONT, MANUAL_CU, LAST_REGULAR_CU, X_AXES, loadJson, spectraOf, showLoadError, cssVar, isNarrow, watchDisplay,
   radioGroup, buildFilterControls, typeDefaults, visibleCells,
   baseLayout, axisStyle, hoverLabel, seriesStyle, trackLongest, directLabels, drawChart, fillTable,
 } from './filters.js';
@@ -91,7 +92,6 @@ let conditions;   // cell id -> condition metadata
 let capacity;     // cell id -> { cu: [{ cu, efc, days, ... }], ... }
 let rIndex;       // cell id -> Map "cu|soc|rt" -> { r0, r1, knee }
 let cuInfo;       // cell id -> Map cu -> { efc, days }
-const spectraCache = new Map();   // cell id -> spectra list, loaded on demand
 let renderToken = 0;
 
 const state = { view: 'resist', type: 'cyclic', temp: 25, color: [], dash: [], x: 'efc',
@@ -127,12 +127,6 @@ function rampColor(cu) {
 /** One stored resistance entry { r0, r1, knee } of a cell, or undefined. */
 const entryOf = (cid, cu, soc = state.soc, rt = state.meas) => rIndex[cid].get(`${cu}|${soc}|${rt}`);
 const valueOf = (e) => (e ? e[state.quantity] : null);
-
-/** Spectra of one cell, fetched the first time the cell is shown. */
-async function spectraOf(cid) {
-  if (!spectraCache.has(cid)) spectraCache.set(cid, await loadJson(`impedance/${cid}.json`));
-  return spectraCache.get(cid);
-}
 
 // ---------------------------------------------------------------------------
 // Controls

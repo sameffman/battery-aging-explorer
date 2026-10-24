@@ -29,6 +29,14 @@ export async function loadJson(name) {
   return res.json();
 }
 
+const spectraCache = new Map();   // cell id -> spectra list
+
+/** Impedance spectra of one cell, fetched the first time the cell is asked for. */
+export async function spectraOf(cid) {
+  if (!spectraCache.has(cid)) spectraCache.set(cid, await loadJson(`impedance/${cid}.json`));
+  return spectraCache.get(cid);
+}
+
 /** Replace a container's content with a readable load-failure message. */
 export function showLoadError(container, err) {
   const box = document.createElement('div');
@@ -332,9 +340,9 @@ export function directLabels(groups, narrow) {
   }));
 }
 
-/** Draw the chart in #chart, first clearing a load-error notice left there by an earlier failure. */
-export function drawChart(traces, layout) {
-  const chart = $('chart');
+/** Draw a chart in the element with the given id (default #chart), first clearing a load-error notice left there by an earlier failure. */
+export function drawChart(traces, layout, id = 'chart') {
+  const chart = $(id);
   if (chart.querySelector('.notice')) {
     Plotly.purge(chart);
     chart.replaceChildren();
