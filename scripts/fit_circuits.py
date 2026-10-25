@@ -35,7 +35,7 @@ Step 2: full circuit fits of a sample of spectra.
   with its sign inverted (positive = capacitive).
   Fitting every spectrum (about 39,000) would take many hours, so the sample is random and seeded:
   one random cell per aging condition, and for each check-up group (early CU 1-5, mid 10-20, late 22-28)
-  and each measurement temperature flag one random spectrum at any state of charge that has R0 and R1.
+  and each measurement temperature flag one random spectrum at any state of charge that has an HFR and an HFR to knee value.
   Spectra with fewer than 28 points are skipped and counted.
 """
 import argparse

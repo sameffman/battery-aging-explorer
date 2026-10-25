@@ -37,6 +37,9 @@
     a semi-infinite Warburg element, Z = σ / √(jω), which is a CPE with n = 0.5; or a finite-space Warburg element with a blocking boundary, Z = R<sub>d</sub> coth(√(jωτ<sub>d</sub>)) / √(jωτ<sub>d</sub>), which is a 45° line at high frequency and vertical at low frequency.
     L is either fixed at the 3 kHz value from step 1 or free. That gives six variants. The one-arc circuit L − R0 − (R1 || CPE1) − CPE tail, with L fixed or free, is fitted in the same way as a reference.
   </p>
+  <p>
+    R0 is the series resistance, in series with all the arcs, and R1 and R2 are the resistances of the first and second R || CPE element (arc), numbered by falling frequency; a one-arc fit has no R2. These are fitted parameters. The impedance page instead reads the high-frequency resistance (HFR) and the HFR to knee resistance directly from each spectrum; the fitted R0 corresponds to the HFR, and the sum of the arc resistances to the HFR to knee resistance.
+  </p>
   <figure class="circuit-figure">
     <div class="chart-card">
       <svg class="circuit" viewBox="0 0 600 150" role="img" aria-labelledby="circuit-title">
@@ -92,7 +95,7 @@
     <li><strong>The depressed single arc becomes two arcs.</strong> In the one-arc fit the exponent of the first element has a median of 0.59, which is a strongly flattened arc. With a second arc the median α1 is 0.93 (L fixed) and the median α2 is 0.79. The time constant of the second arc is a median 21 times that of the first (10th to 90th percentile: 9 to 265). This is consistent with two overlapping processes, but the fit does not identify them.</li>
     <li><strong>Low-frequency tail.</strong> With two arcs, a CPE tail with a free exponent fits better than a semi-infinite Warburg tail: the Warburg misfit is a median 6% higher with L fixed and 10% higher with L free, and lower in only 23 and 15 of 262 spectra, although the CPE has one more parameter. A finite-space tail has a median misfit 2% higher than the CPE and is better in 66 (L fixed) and 70 (L free) spectra, so the CPE fits better in about three quarters of the spectra, by a small margin. The CPE tail exponent has a median of 0.65 with L fixed (10th to 90th percentile: 0.55 to 0.92).</li>
     <li><strong>Fixing or freeing L.</strong> When L is free it ends above the high-frequency value by a median of 5% (10th to 90th percentile: 1% to 15%) in the two-arc CPE fit, and the misfit falls by a median of 16%. The test does not separate two explanations: the full fit absorbs some model error into L, or the high-frequency estimate is biased low. With L free the split between the arcs changes, as noted above.</li>
-    <li><strong>R0 and R1 + R2.</strong> In the two-arc CPE fit with L fixed, the fitted R0 is lower than the value read directly from the spectrum by a median of 0.87 mΩ (10th to 90th percentile: 0.49 to 1.59 mΩ) and higher than in the one-arc fit by a median of 0.34 mΩ. The sum R1 + R2 is a median 1.09 times the directly read R1 (CPE tail; 0.98 with the Warburg tail and 0.99 with the finite-space tail), whereas R1 alone is a median 0.35 times that value. The directly read R1 therefore corresponds roughly to the first two arcs together.</li>
+    <li><strong>R0 against the HFR, and R1 + R2 against HFR to knee.</strong> In the two-arc CPE fit with L fixed, the fitted R0 is lower than the HFR read directly from the spectrum by a median of 0.87 mΩ (10th to 90th percentile: 0.49 to 1.59 mΩ) and higher than in the one-arc fit by a median of 0.34 mΩ. The sum R1 + R2 is a median 1.09 times the HFR to knee resistance read directly from the spectrum (CPE tail; 0.98 with the Warburg tail and 0.99 with the finite-space tail), whereas R1 alone is a median 0.35 times that value. The HFR to knee resistance therefore corresponds roughly to the first two arcs together.</li>
     <li><strong>Quality of fit by condition.</strong> The misfit of the two-arc CPE fit with L fixed is larger for spectra measured at the aging temperature (1.34%) than at room temperature (1.08%), and larger for cells aged at 0 and 10 °C than at 25 and 40 °C (1.54%, 1.47%, 1.11% and 1.05%; one arc: 1.82%, 1.69%, 1.30% and 1.30%). It does not change systematically with check-up group (1.18%, 1.13% and 1.21% for check-ups 1–5, 10–20 and 22–28), but the later groups contain fewer cells (see the sample below).</li>
   </ul>
 
@@ -115,7 +118,7 @@
   </p>
   <p>
     Fitting every spectrum would take many hours, so the fits use a random sample (fixed seed): one random cell per aging condition and, for each
-    group of check-ups (1–5, 10–20, 22–28) and each measurement temperature, one random spectrum at any state of charge that has both R0 and R1. A cell contributes nothing to a group of check-ups that it did not reach, so the sample has 322 spectra, not the 456 of 76 conditions × 3 groups × 2 temperatures; the 262 with all
+    group of check-ups (1–5, 10–20, 22–28) and each measurement temperature, one random spectrum at any state of charge that has both an HFR and an HFR to knee value. A cell contributes nothing to a group of check-ups that it did not reach, so the sample has 322 spectra, not the 456 of 76 conditions × 3 groups × 2 temperatures; the 262 with all
     28 points were fitted. Because many cells stopped before CU 10, the sample holds 118, 83 and 61 spectra in the three check-up groups, and the later groups consist of the cells that lasted.
   </p>
 
@@ -355,7 +358,7 @@ async function render() {
   };
   drawNyquist(buildTraces(entry, spectrum), layout);
   $('summary').textContent = `${entry.cell} · CU ${entry.cu} · ${entry.soc}% SoC · ${measurementOf(entry.rt)} · ` +
-    `read directly from the spectrum: R0 ${entry.r0.toFixed(2)} mΩ, R1 ${entry.r1.toFixed(2)} mΩ · L from 3 kHz window ${entry.L_hf.toFixed(1)} nH`;
+    `read directly from the spectrum: HFR ${entry.r0.toFixed(2)} mΩ, HFR to knee ${entry.r1.toFixed(2)} mΩ · L from 3 kHz window ${entry.L_hf.toFixed(1)} nH`;
   renderParameterTable(entry);
 }
 

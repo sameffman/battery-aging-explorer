@@ -36,16 +36,16 @@ Conventions used (each one is stated here so it can be checked):
                  reference is this project's choice, not theirs.
   * EIS resistances (eis_r.json), calculated from each stored spectrum. Definitions follow the dataset
     authors' example scripts (github.com/energystatusdata/bat-age-data-scripts, generate_log_age.py),
-    with a modified R1 search. Implementation is independent of that code.
-      - R0: real part where the spectrum crosses the real axis, linearly interpolated between the two
+    with a modified knee search. Implementation is independent of that code.
+      - HFR (key r0; the authors' R0): real part where the spectrum crosses the real axis, linearly interpolated between the two
             neighboring points, searched between 200 Hz and 3.3 kHz.
-      - R1: real part at the knee of the spectrum, minus R0. The knee is the point of smallest phase
+      - HFR to knee (key r1; the authors' R1): real part at the knee of the spectrum, minus the HFR. The knee is the point of smallest phase
             angle among local minima of the phase at or below 33 Hz. A local minimum needs a point
             on each side inside that range, so the range's end points never qualify. If that knee has
             fewer than two measured points at lower frequency, it is too close to the end of the data
-            to trust and R1 = null. The authors take the smallest phase over 0.49-33 Hz without these
+            to trust and HFR to knee = null. The authors take the smallest phase over 0.49-33 Hz without these
             requirements, which can return an end point instead of a knee. A spectrum with no such
-            minimum also has R1 = null.
+            minimum also has HFR to knee = null.
       Phase = atan2(Im, Re) of the stored values. The dataset stores the imaginary part with its
       sign inverted (positive = capacitive), so Im here is that stored value.
 """
@@ -253,7 +253,7 @@ def cu_of(ts, cu_starts):
 
 
 def eis_resistances(pts):
-    """R0, R1 (mOhm) and the knee frequency (Hz) of one spectrum; None where not determinable.
+    """HFR, HFR to knee (mOhm) and the knee frequency (Hz) of one spectrum; None where not determinable.
 
     pts: [(freq_Hz, re, im)] sorted by descending frequency, im as stored (positive = capacitive).
     A local minimum of the phase is strictly below the next higher-frequency point and not above

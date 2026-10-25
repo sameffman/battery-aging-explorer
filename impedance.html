@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Impedance · Battery aging explorer</title>
-<meta name="description" content="Ohmic resistance R0 and R1 from the impedance spectra of 228 NMC/C-SiO 18650 cells at each check-up, plus Nyquist plots of individual spectra.">
+<meta name="description" content="High-frequency resistance and the resistance from there to the knee, from the impedance spectra of 228 NMC/C-SiO 18650 cells at each check-up, plus Nyquist plots of individual spectra.">
 <link rel="stylesheet" href="style.css">
 <!-- Plotly is loaded from a CDN at a pinned version. -->
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
@@ -25,8 +25,8 @@
 <main>
   <h1>Impedance</h1>
   <p class="lede">
-    Resistances taken from the impedance spectra measured at each check-up. R0 is the ohmic resistance, where a spectrum crosses the real axis;
-    R1 is the distance along the real axis from there to the knee of the spectrum, its point of lowest phase angle. One view follows them against aging,
+    Resistances taken from the impedance spectra measured at each check-up. The high-frequency resistance (HFR) is where a spectrum crosses the real axis, often called the ohmic resistance;
+    HFR to knee is the distance along the real axis from there to the knee of the spectrum, its point of lowest phase angle. One view follows them against aging,
     the other shows the spectra themselves. Cells aged under the same condition share a color and line style (three cells per condition).
   </p>
 
@@ -61,10 +61,10 @@
     <ul class="notes">
       <li><strong>Spectra</strong> are used as stored in the dataset, with the authors' compensated impedance. Spectra marked invalid and points with missing values are dropped. At each check-up a spectrum is measured at five states of charge, at room temperature and at the cell's aging (operating) temperature. Values are in milliohms.</li>
       <li><strong>Room and aging temperature</strong> are told apart by the dataset's <code>is_rt</code> flag: 1 for a measurement at room temperature, 0 for one at operating (aging) temperature.</li>
-      <li><strong>R0</strong> is the real part where the spectrum crosses the real axis, found by linear interpolation between the two neighboring points, searched between 200 Hz and 3.3 kHz.</li>
-      <li><strong>R1</strong> is the real part at the knee of the spectrum minus R0. The knee is the point of lowest phase angle among the local minima of the phase at or below 33 Hz, and it must have at least two measured points at lower frequency. Without such a knee a spectrum has no R1 and the point is left out of the chart. The authors instead take the lowest phase angle over 0.49 to 33 Hz, which can return an end point of that range, and average over each check-up; here every spectrum is evaluated on its own.</li>
-      <li><strong>Not fitted:</strong> R0 and R1 are read directly from the measured spectra. They are not parameters of a fitted equivalent circuit, and R1 is not identified with a single process.</li>
-      <li><strong>Nyquist plot:</strong> the vertical axis is −Im(Z), the sign in which the dataset stores the imaginary part, positive for capacitive behavior, so spectra rise as the frequency falls. At the highest frequencies the points lie below the real axis (the inductive tail). Both axes use the same scale, and the vertical axis starts at 0, so the tail is hidden unless “Include inductive tail” is checked. Diamonds mark R0 on the real axis and circles mark the knee. The authors report the data as most accurate between 0.5 Hz and 5 kHz, excluding 100 Hz and 208.3 Hz; no points are removed here on that basis.</li>
+      <li><strong>HFR</strong> (high-frequency resistance) is the real part where the spectrum crosses the real axis, found by linear interpolation between the two neighboring points, searched between 200 Hz and 3.3 kHz. The authors call it R0.</li>
+      <li><strong>HFR to knee</strong> is the real part at the knee of the spectrum minus the HFR, the combined resistance of every arc before the knee. The authors call it R1. The knee is the point of lowest phase angle among the local minima of the phase at or below 33 Hz, and it must have at least two measured points at lower frequency. Without such a knee a spectrum has no HFR to knee value and the point is left out of the chart. The authors instead take the lowest phase angle over 0.49 to 33 Hz, which can return an end point of that range, and average over each check-up; here every spectrum is evaluated on its own.</li>
+      <li><strong>Not fitted:</strong> The HFR and HFR to knee are read directly from the measured spectra. They are not parameters of a fitted equivalent circuit, and HFR to knee combines every process before the knee, so it is not the resistance of a single one. The circuit fits page uses R0, R1 and R2 for fitted parameters, which are different quantities.</li>
+      <li><strong>Nyquist plot:</strong> the vertical axis is −Im(Z), the sign in which the dataset stores the imaginary part, positive for capacitive behavior, so spectra rise as the frequency falls. At the highest frequencies the points lie below the real axis (the inductive tail). Both axes use the same scale, and the vertical axis starts at 0, so the tail is hidden unless “Include inductive tail” is checked. Diamonds mark the HFR on the real axis and circles mark the knee. The authors report the data as most accurate between 0.5 Hz and 5 kHz, excluding 100 Hz and 208.3 Hz; no points are removed here on that basis.</li>
       <li><strong>Check-up numbers</strong> run from CU 1 to CU 28, plus CU 29, a manual check-up performed at room temperature with air cooling, marked “manual” in the tooltip.</li>
       <li><strong>Equivalent full cycles (EFC)</strong> are as on the capacity page. Calendar-aged cells only accumulate throughput during check-ups, so time is the meaningful axis for them.</li>
     </ul>
@@ -74,7 +74,7 @@
     Data: M. Luh and T. Blank, <em>Comprehensive battery aging dataset: capacity and impedance fade measurements of a lithium-ion NMC/C-SiO cell</em>
     (version 2: result data), RADAR4KIT, 2024,
     <a href="https://doi.org/10.35097/1969">doi:10.35097/1969</a>, licensed
-    <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. R0 and R1 follow the authors' definitions with a modified R1 search; values shown are derived from that dataset. See the
+    <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. The HFR and HFR to knee follow the authors' definitions of R0 and R1, with a modified knee search; values shown are derived from that dataset. See the
     <a href="index.html#about">project overview</a>.
   </p>
 </main>
@@ -99,8 +99,8 @@ const state = { view: 'resist', type: 'cyclic', temp: 25, color: [], dash: [], x
                 quantity: 'r1', meas: '0', soc: '50', cell: null, tail: false };
 
 const QUANTITIES = {
-  r0: { label: 'R0', title: 'R0 (mΩ)' },
-  r1: { label: 'R1', title: 'R1 (mΩ)' },
+  r0: { label: 'HFR', title: 'HFR (mΩ)', missing: 'HFR' },
+  r1: { label: 'HFR to knee', title: 'HFR to knee (mΩ)', missing: 'HFR to knee value' },
 };
 const MEAS = { '0': 'aging temperature', '1': 'room temperature' };
 
@@ -255,7 +255,7 @@ function renderResistance(cells, narrow) {
 
 /**
  * Draw one curve per check-up for a cell at the selected state of charge and measurement temperature,
- * with R0 and knee markers. Resolves to the spectra shown, or null if loading failed or a newer render superseded this one.
+ * with HFR and knee markers. Resolves to the spectra shown, or null if loading failed or a newer render superseded this one.
  */
 async function renderNyquist(cid, narrow, token) {
   const surface = cssVar('--surface');
@@ -293,18 +293,18 @@ async function renderNyquist(cid, narrow, token) {
     if (!e) continue;
     if (e.r0 != null) {
       r0Pts.x.push(e.r0); r0Pts.y.push(0);
-      r0Pts.text.push(`CU ${s.cu} · R0 ${e.r0.toFixed(2)} mΩ`);
+      r0Pts.text.push(`CU ${s.cu} · HFR ${e.r0.toFixed(2)} mΩ`);
     }
     if (e.r0 != null && e.r1 != null && e.knee != null) {
       let k = 0;   // spectrum point at the knee frequency
       s.f.forEach((f, i) => { if (Math.abs(f - e.knee) < Math.abs(s.f[k] - e.knee)) k = i; });
       kneePts.x.push(s.re[k]); kneePts.y.push(s.im[k]);
-      kneePts.text.push(`CU ${s.cu} · knee at ${e.knee} Hz · R1 ${e.r1.toFixed(2)} mΩ`);
+      kneePts.text.push(`CU ${s.cu} · knee at ${e.knee} Hz · HFR to knee ${e.r1.toFixed(2)} mΩ`);
     }
   }
   if (r0Pts.x.length) {
     traces.push({
-      type: 'scatter', mode: 'markers', name: 'R0 (real-axis crossing)',
+      type: 'scatter', mode: 'markers', name: 'HFR (real-axis crossing)',
       x: r0Pts.x, y: r0Pts.y, text: r0Pts.text, cliponaxis: false,
       marker: { symbol: 'diamond', size: 9, color: ink, line: { color: surface, width: 2 } },
       hovertemplate: '%{text}<extra></extra>',
@@ -384,7 +384,7 @@ function renderSummary(cells, shown) {
     }
   }
   const parts = [`${cells.length} cells shown`, where];
-  if (empty) parts.push(`${empty} of ${total} spectra ${empty === 1 ? 'has' : 'have'} no ${QUANTITIES[state.quantity].label} and ${empty === 1 ? 'is' : 'are'} left out`);
+  if (empty) parts.push(`${empty} of ${total} spectra ${empty === 1 ? 'has' : 'have'} no ${QUANTITIES[state.quantity].missing} and ${empty === 1 ? 'is' : 'are'} left out`);
   $('summary').textContent = parts.join(' · ');
 }
 
@@ -402,8 +402,8 @@ function renderTable(cells) {
       `Check-up columns show ${QUANTITIES[state.quantity].label} in mΩ at ${state.soc}% state of charge, at ${MEAS[state.meas]}; – marks a missing spectrum or value.`;
   } else if (state.cell) {
     const cid = state.cell;
-    rows.push(['R0 (mΩ)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.r0, 3))]);
-    rows.push(['R1 (mΩ)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.r1, 3))]);
+    rows.push(['HFR (mΩ)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.r0, 3))]);
+    rows.push(['HFR to knee (mΩ)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.r1, 3))]);
     rows.push(['Knee (Hz)', ...cuNumbers.map((n) => fmt(entryOf(cid, n)?.knee, 2))]);
     $('table-caption').textContent =
       `Resistances of ${cid} at ${state.soc}% state of charge, at ${MEAS[state.meas]}; – marks a missing spectrum or value.`;
