@@ -305,6 +305,17 @@ export const axisStyle = () => ({
   gridcolor: cssVar('--grid'), linecolor: cssVar('--axis'), tickcolor: cssVar('--axis'), ticks: 'outside', zeroline: false,
 });
 
+/**
+ * Y axis of a Nyquist plot, −Im(Z), scaled equally with the x axis so that arcs keep their shape.
+ * Unless `includeTail` is set, the axis starts at 0, which leaves out the inductive tail (negative −Im(Z) at high frequency).
+ */
+export const nyquistYAxis = (includeTail) => ({
+  title: { text: '−Im(Z) (mΩ)', standoff: 8 },
+  scaleanchor: 'x', scaleratio: 1,
+  ...(includeTail ? {} : { rangemode: 'tozero', autorangeoptions: { minallowed: 0 }, constraintoward: 'bottom' }),
+  ...axisStyle(),
+});
+
 /** Plotly hover-label style with the given border color. */
 export function hoverLabel(borderColor) {
   return { bgcolor: cssVar('--surface'), bordercolor: borderColor, font: { color: cssVar('--ink'), family: FONT, size: 12 } };
@@ -348,6 +359,39 @@ export function drawChart(traces, layout, id = 'chart') {
     chart.replaceChildren();
   }
   return Plotly.react(chart, traces, layout, { displayModeBar: false, responsive: true });
+}
+
+/** The 1, 2 or 5 times a power of ten that is closest to `raw`. */
+function niceStep(raw) {
+  const p = 10 ** Math.floor(Math.log10(raw));
+  const m = raw / p;
+  return (m <= 1.4 ? 1 : m <= 3.5 ? 2 : m <= 7 ? 5 : 10) * p;
+}
+
+/** Give both axes of a Nyquist plot the same tick step (about 70 px apart), so the grid is square like the scale. */
+function squareTicks(chart) {
+  const { xaxis, yaxis } = chart._fullLayout;
+  const pxPerUnit = xaxis._length / (xaxis.range[1] - xaxis.range[0]);
+  const dtick = niceStep(70 / pxPerUnit);
+  return Plotly.relayout(chart, {
+    'xaxis.tickmode': 'linear', 'xaxis.tick0': 0, 'xaxis.dtick': dtick,
+    'yaxis.tickmode': 'linear', 'yaxis.tick0': 0, 'yaxis.dtick': dtick,
+  });
+}
+
+/** Draw a Nyquist plot in #chart: like `drawChart`, with the same tick step on both axes, also after the window is resized. */
+export async function drawNyquist(traces, layout) {
+  const chart = $('chart');
+  await drawChart(traces, layout);
+  await squareTicks(chart);
+  if (!chart.dataset.squareTicks) {
+    chart.dataset.squareTicks = '1';
+    let timer;
+    window.addEventListener('resize', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { if (chart.layout?.yaxis?.scaleanchor === 'x') squareTicks(chart); }, 250);
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

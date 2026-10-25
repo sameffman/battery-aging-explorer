@@ -33,8 +33,8 @@
   <h2>The circuit</h2>
   <p>
     The circuit is L − R0 − (R1 || CPE1) − (R2 || CPE2) − tail. Each arc is a resistor in parallel with a CPE, R / (1 + (jωτ)<sup>α</sup>), with α between 0.3 and 1.
-    The second arc is kept slower than the first (τ2 = τ1 × a ratio between 1 and 1000), so that the two cannot swap. The tail is one of three elements: a CPE with free exponent n;
-    a semi-infinite Warburg element (a CPE with n = 0.5); or a finite-space Warburg element with a blocking boundary, which is a 45° line at high frequency and vertical at low frequency.
+    The second arc is kept slower than the first (τ2 = τ1 × a ratio between 1 and 1000), so that the two cannot swap. The tail is one of three elements: a CPE with free exponent n, Z = 1 / (Q (jω)<sup>n</sup>);
+    a semi-infinite Warburg element, Z = σ / √(jω), which is a CPE with n = 0.5; or a finite-space Warburg element with a blocking boundary, Z = R<sub>d</sub> coth(√(jωτ<sub>d</sub>)) / √(jωτ<sub>d</sub>), which is a 45° line at high frequency and vertical at low frequency.
     L is either fixed at the 3 kHz value from step 1 or free. That gives six variants. The one-arc circuit L − R0 − (R1 || CPE1) − CPE tail, with L fixed or free, is fitted in the same way as a reference.
   </p>
   <figure class="circuit-figure">
@@ -90,19 +90,19 @@
     <li><strong>Inductance.</strong> The high-frequency inductance is 199 nH (median of the 3 kHz window over all 39,293 spectra). The windows from 1, 3 and 5 kHz give 195, 199 and 200 nH, and the misfit of the high-frequency line falls from 0.60 to 0.15 mΩ as the window moves up. Between cells it spans 183 to 222 nH (5th to 95th percentile of the cell medians); within a cell the median standard deviation is 7 nH. It varies little with state of charge (medians 197.7 to 199.5 nH) or with whether the spectrum was measured at room or aging temperature (198.4 and 198.8 nH). Pair by pair (same cell, check-up and state of charge), the spectrum measured at aging temperature gives a median L 1.3, 0.6, 0.2 and 1.1 nH above the room-temperature one for cells aged at 0, 10, 25 and 40 °C. It rises slightly with aging, by a median of 6 nH from check-ups 1–3 to 25–28; the cause was not investigated.</li>
     <li><strong>Two arcs fit better than one.</strong> The circuit with a second R || CPE element has a lower misfit than the one-arc circuit in 259 of 262 spectra with L fixed and 252 with L free (CPE tail). The median misfit is 1.16% against 1.42% with L fixed, and 0.99% against 1.21% with L free. The ratio of the two misfits has a median of 0.87 (10th to 90th percentile: 0.70 to 0.95) with L fixed. The misfit is adjusted for the three extra parameters; no formal model-selection test was run.</li>
     <li><strong>The depressed single arc becomes two arcs.</strong> In the one-arc fit the exponent of the first element has a median of 0.59, which is a strongly flattened arc. With a second arc the median α1 is 0.93 (L fixed) and the median α2 is 0.79. The time constant of the second arc is a median 21 times that of the first (10th to 90th percentile: 9 to 265). This is consistent with two overlapping processes, but the fit does not identify them.</li>
-    <li><strong>Low-frequency tail.</strong> With two arcs, a CPE tail with a free exponent fits better than a semi-infinite Warburg tail: the Warburg misfit is a median 6% higher with L fixed and 10% higher with L free, and lower in only 23 and 15 of 262 spectra, although the CPE has one more parameter. A finite-space tail is within 2% of the CPE in the median and is better in 66 (L fixed) and 70 (L free) spectra, so the data do not separate the two. The CPE tail exponent has a median of 0.65 with L fixed (10th to 90th percentile: 0.55 to 0.92).</li>
+    <li><strong>Low-frequency tail.</strong> With two arcs, a CPE tail with a free exponent fits better than a semi-infinite Warburg tail: the Warburg misfit is a median 6% higher with L fixed and 10% higher with L free, and lower in only 23 and 15 of 262 spectra, although the CPE has one more parameter. A finite-space tail has a median misfit 2% higher than the CPE and is better in 66 (L fixed) and 70 (L free) spectra, so the CPE fits better in about three quarters of the spectra, by a small margin. The CPE tail exponent has a median of 0.65 with L fixed (10th to 90th percentile: 0.55 to 0.92).</li>
     <li><strong>Fixing or freeing L.</strong> When L is free it ends above the high-frequency value by a median of 5% (10th to 90th percentile: 1% to 15%) in the two-arc CPE fit, and the misfit falls by a median of 16%. The test does not separate two explanations: the full fit absorbs some model error into L, or the high-frequency estimate is biased low. With L free the split between the arcs changes, as noted above.</li>
     <li><strong>R0 and R1 + R2.</strong> In the two-arc CPE fit with L fixed, the fitted R0 is lower than the value read directly from the spectrum by a median of 0.87 mΩ (10th to 90th percentile: 0.49 to 1.59 mΩ) and higher than in the one-arc fit by a median of 0.34 mΩ. The sum R1 + R2 is a median 1.09 times the directly read R1 (CPE tail; 0.98 with the Warburg tail and 0.99 with the finite-space tail), whereas R1 alone is a median 0.35 times that value. The directly read R1 therefore corresponds roughly to the first two arcs together.</li>
-    <li><strong>Quality of fit by condition.</strong> The misfit of the two-arc CPE fit with L fixed is larger for spectra measured at the aging temperature (1.34%) than at room temperature (1.08%), and larger for cells aged at 0 and 10 °C than at 25 and 40 °C (1.54%, 1.47%, 1.11% and 1.05%; one arc: 1.82%, 1.69%, 1.30% and 1.30%). It does not change systematically with check-up group (1.18%, 1.13% and 1.21% for check-ups 1–5, 10–20 and 22–28).</li>
+    <li><strong>Quality of fit by condition.</strong> The misfit of the two-arc CPE fit with L fixed is larger for spectra measured at the aging temperature (1.34%) than at room temperature (1.08%), and larger for cells aged at 0 and 10 °C than at 25 and 40 °C (1.54%, 1.47%, 1.11% and 1.05%; one arc: 1.82%, 1.69%, 1.30% and 1.30%). It does not change systematically with check-up group (1.18%, 1.13% and 1.21% for check-ups 1–5, 10–20 and 22–28), but the later groups contain fewer cells (see the sample below).</li>
   </ul>
 
   <h2>Step 1: inductance from the high-frequency limit</h2>
   <p>
-    Above about 1 kHz the spectra dip below the real axis, where Z = R0 + jωL. L is the least-squares slope of the stored −Im(Z) against ω = 2πf,
+    Above about 1 kHz the spectra dip below the real axis, where Z = R0 + jωL. L is the least-squares slope of Im(Z) against ω = 2πf (the dataset stores −Im(Z), so this is the negative of the stored value),
     through the origin, over the points at or above a minimum frequency. It was fitted this way for every spectrum, with three nested windows.
     Fitting L first separates a simple feature that likely depends more on wiring and instrumentation than on chemistry. If it is stable, it can be fixed in the
     full fit, which leaves fewer free parameters for the arcs, where the fit is least certain. The risk is the opposite one: capacitive contribution from the
-    arcs may add positive Im at the low end of a window and bias L low, so the windows are compared. Their medians differ by about 4 nH (195.3 nH from 1 kHz, 199.7 nH from 5 kHz).
+    arcs lowers Im(Z) at the low end of a window and may bias L low, so the windows are compared. Their medians differ by about 4 nH (195.3 nH from 1 kHz, 199.7 nH from 5 kHz).
   </p>
   <div class="chart-card"><div id="chart-l" role="img" aria-label="Histogram of the fitted high-frequency inductance in nanohenries for three fitting windows. A table with the medians follows."></div></div>
   <p class="summary" id="summary-l" aria-live="polite"></p>
@@ -115,8 +115,12 @@
   </p>
   <p>
     Fitting every spectrum would take many hours, so the fits use a random sample (fixed seed): one random cell per aging condition and, for each
-    group of check-ups (1–5, 10–20, 22–28) and each measurement temperature, one random spectrum at any state of charge. That is 322 spectra; the 262 with all
-    28 points were fitted.
+    group of check-ups (1–5, 10–20, 22–28) and each measurement temperature, one random spectrum at any state of charge that has both R0 and R1. A cell contributes nothing to a group of check-ups that it did not reach, so the sample has 322 spectra, not the 456 of 76 conditions × 3 groups × 2 temperatures; the 262 with all
+    28 points were fitted. Because many cells stopped before CU 10, the sample holds 118, 83 and 61 spectra in the three check-up groups, and the later groups consist of the cells that lasted.
+  </p>
+
+  <p>
+    The spectrum plot uses the same scale on both axes. Its vertical axis starts at 0, which hides the inductive tail, the part of the spectrum above about 1 kHz that lies below the real axis; “Include inductive tail” shows it.
   </p>
 
   <form class="controls" id="controls" aria-label="Spectrum and fits" onsubmit="return false">
@@ -124,6 +128,7 @@
     <fieldset><legend>Aging temperature</legend><div class="options seg" id="temp-options"></div></fieldset>
     <fieldset><legend><label for="spectrum-select">Spectrum</label></legend><select id="spectrum-select"></select></fieldset>
     <fieldset><legend>Fits shown</legend><div class="options checks" id="variant-options"></div></fieldset>
+    <fieldset><legend>High frequency</legend><div class="options checks" id="tail-options"></div></fieldset>
   </form>
   <div class="chart-card"><div id="chart" role="img" aria-label="Nyquist plot of one measured spectrum with the selected circuit fits. A table with the fitted parameters follows."></div></div>
   <p class="summary" id="summary" aria-live="polite"></p>
@@ -160,7 +165,7 @@
 import {
   $, FONT, loadJson, spectraOf, showLoadError, cssVar, isNarrow, watchDisplay,
   radioGroup, checkGroup, AGING, TEMPERATURES, seriesVar,
-  baseLayout, axisStyle, hoverLabel, drawChart, fillTable,
+  baseLayout, axisStyle, nyquistYAxis, drawNyquist, hoverLabel, drawChart, fillTable,
 } from './filters.js';
 
 const TAILS = [
@@ -192,7 +197,7 @@ const STRATA = [
 let fits;           // fits.json
 let inductance;     // cell id -> [[cu, soc, rt, L per window], ...]
 let renderToken = 0;
-const state = { type: 'cyclic', temp: 25, pick: 0, show: ['cpe_fixed', 'cpe+arc_fixed'] };
+const state = { type: 'cyclic', temp: 25, pick: 0, show: ['cpe_fixed', 'cpe+arc_fixed'], tail: false };
 
 // ---------------------------------------------------------------------------
 // Step 1: inductance
@@ -256,6 +261,8 @@ function buildControls() {
   checkGroup($('variant-options'),
     VARIANTS.map((v) => ({ id: v.id, label: v.label, key: { colorVar: seriesVar(v.colorIndex), dash: LINE_STYLES[v.mode].css } })),
     state.show, (ids) => { state.show = ids; render(); });
+  checkGroup($('tail-options'), [{ id: 'tail', label: 'Include inductive tail' }], [],
+    (ids) => { state.tail = ids.includes('tail'); render(); });
 }
 
 /** Index of the listed spectrum whose two-arc misfit (CPE tail, L fixed) is closest to the median of the sample, so the first view is a typical one. */
@@ -280,7 +287,7 @@ function buildTraces(entry, spectrum) {
     type: 'scatter', mode: 'lines+markers', name: 'Measured',
     x: spectrum.re, y: spectrum.im, customdata: spectrum.f,
     line: { color: cssVar('--ink'), width: 1 }, marker: { color: cssVar('--ink'), size: 5 },
-    hovertemplate: '<b>%{customdata} Hz</b><br>Re %{x:.2f} · Im %{y:.2f} mΩ<extra></extra>',
+    hovertemplate: '<b>%{customdata} Hz</b><br>Re %{x:.2f} · −Im %{y:.2f} mΩ<extra></extra>',
     hoverlabel: hoverLabel(cssVar('--ink')),
   }];
   for (const v of VARIANTS.filter((x) => state.show.includes(x.id))) {
@@ -289,7 +296,7 @@ function buildTraces(entry, spectrum) {
       type: 'scatter', mode: 'lines', name: v.label,
       x: entry.fits[v.id].re, y: entry.fits[v.id].im,
       line: { color, width: v.arcs === 2 ? 3 : 1.5, dash: LINE_STYLES[v.mode].plotly },
-      hovertemplate: `${v.label}<br>Re %{x:.2f} · Im %{y:.2f} mΩ<extra></extra>`,
+      hovertemplate: `${v.label}<br>Re %{x:.2f} · −Im %{y:.2f} mΩ<extra></extra>`,
       hoverlabel: hoverLabel(color),
     });
   }
@@ -298,9 +305,10 @@ function buildTraces(entry, spectrum) {
 
 /** Text of the fitted tail parameters of one variant. */
 function tailText(tail, q) {
-  if (tail === 'cpe') return `Q ${q[0]}, n ${q[1]}`;
-  if (tail === 'warburg') return `σ ${q[0]}`;
-  return `Rd ${q[0]} mΩ, td ${q[1]} s`;
+  const sig = (x) => Number(x).toPrecision(3);
+  if (tail === 'cpe') return `Q ${sig(q[0])} mΩ⁻¹ sⁿ, n ${Number(q[1]).toFixed(2)}`;
+  if (tail === 'warburg') return `σ ${sig(q[0])} mΩ s⁻¹ᐟ²`;
+  return `Rd ${sig(q[0])} mΩ, τd ${sig(q[1])} s`;
 }
 
 /** Table of the fitted parameters of the selected variants for the shown spectrum. */
@@ -343,9 +351,9 @@ async function render() {
     showlegend: true,
     legend: { orientation: 'h', x: 0, y: -0.2, font: { color: cssVar('--ink-2'), family: FONT, size: 12 } },
     xaxis: { title: { text: 'Re(Z) (mΩ)', standoff: 10 }, ...axisStyle() },
-    yaxis: { title: { text: 'Im(Z) (mΩ)', standoff: 8 }, scaleanchor: 'x', scaleratio: 1, ...axisStyle() },
+    yaxis: nyquistYAxis(state.tail),
   };
-  drawChart(buildTraces(entry, spectrum), layout);
+  drawNyquist(buildTraces(entry, spectrum), layout);
   $('summary').textContent = `${entry.cell} · CU ${entry.cu} · ${entry.soc}% SoC · ${measurementOf(entry.rt)} · ` +
     `read directly from the spectrum: R0 ${entry.r0.toFixed(2)} mΩ, R1 ${entry.r1.toFixed(2)} mΩ · L from 3 kHz window ${entry.L_hf.toFixed(1)} nH`;
   renderParameterTable(entry);

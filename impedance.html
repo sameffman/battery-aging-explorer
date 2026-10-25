@@ -41,6 +41,7 @@
     <fieldset id="quantity-group"><legend>Resistance</legend><div class="options seg" id="quantity-options"></div></fieldset>
     <fieldset id="x-group"><legend>X axis</legend><div class="options seg" id="x-options"></div></fieldset>
     <fieldset id="cell-group"><legend><label for="cell-select">Cell</label></legend><select id="cell-select"></select></fieldset>
+    <fieldset id="tail-group"><legend>High frequency</legend><div class="options checks" id="tail-options"></div></fieldset>
   </form>
 
   <div class="chart-card"><div id="chart" role="img" aria-label="Chart of impedance resistances. A table with the same values follows the chart."></div></div>
@@ -63,7 +64,7 @@
       <li><strong>R0</strong> is the real part where the spectrum crosses the real axis, found by linear interpolation between the two neighboring points, searched between 200 Hz and 3.3 kHz.</li>
       <li><strong>R1</strong> is the real part at the knee of the spectrum minus R0. The knee is the point of lowest phase angle among the local minima of the phase at or below 33 Hz, and it must have at least two measured points at lower frequency. Without such a knee a spectrum has no R1 and the point is left out of the chart. The authors instead take the lowest phase angle over 0.49 to 33 Hz, which can return an end point of that range, and average over each check-up; here every spectrum is evaluated on its own.</li>
       <li><strong>Not fitted:</strong> R0 and R1 are read directly from the measured spectra. They are not parameters of a fitted equivalent circuit, and R1 is not identified with a single process.</li>
-      <li><strong>Nyquist plot:</strong> the imaginary part is plotted as stored, positive for capacitive behavior, so spectra rise as the frequency falls. At the highest frequencies the points lie below the real axis. Diamonds mark R0 on the real axis and circles mark the knee. The authors report the data as most accurate between 0.5 Hz and 5 kHz, excluding 100 Hz and 208.3 Hz; no points are removed here on that basis.</li>
+      <li><strong>Nyquist plot:</strong> the vertical axis is −Im(Z), the sign in which the dataset stores the imaginary part, positive for capacitive behavior, so spectra rise as the frequency falls. At the highest frequencies the points lie below the real axis (the inductive tail). Both axes use the same scale, and the vertical axis starts at 0, so the tail is hidden unless “Include inductive tail” is checked. Diamonds mark R0 on the real axis and circles mark the knee. The authors report the data as most accurate between 0.5 Hz and 5 kHz, excluding 100 Hz and 208.3 Hz; no points are removed here on that basis.</li>
       <li><strong>Check-up numbers</strong> run from CU 1 to CU 28, plus CU 29, a manual check-up performed at room temperature with air cooling, marked “manual” in the tooltip.</li>
       <li><strong>Equivalent full cycles (EFC)</strong> are as on the capacity page. Calendar-aged cells only accumulate throughput during check-ups, so time is the meaningful axis for them.</li>
     </ul>
@@ -82,8 +83,8 @@
 <script type="module">
 import {
   $, FONT, MANUAL_CU, LAST_REGULAR_CU, X_AXES, loadJson, spectraOf, showLoadError, cssVar, isNarrow, watchDisplay,
-  radioGroup, buildFilterControls, typeDefaults, visibleCells,
-  baseLayout, axisStyle, hoverLabel, seriesStyle, trackLongest, directLabels, drawChart, fillTable,
+  radioGroup, checkGroup, buildFilterControls, typeDefaults, visibleCells,
+  baseLayout, axisStyle, nyquistYAxis, drawNyquist, hoverLabel, seriesStyle, trackLongest, directLabels, drawChart, fillTable,
 } from './filters.js';
 
 const SOCS = [10, 30, 50, 70, 90];
@@ -95,7 +96,7 @@ let cuInfo;       // cell id -> Map cu -> { efc, days }
 let renderToken = 0;
 
 const state = { view: 'resist', type: 'cyclic', temp: 25, color: [], dash: [], x: 'efc',
-                quantity: 'r1', meas: '0', soc: '50', cell: null };
+                quantity: 'r1', meas: '0', soc: '50', cell: null, tail: false };
 
 const QUANTITIES = {
   r0: { label: 'R0', title: 'R0 (mΩ)' },
@@ -153,6 +154,9 @@ function buildControls() {
     state.quantity, (id) => { state.quantity = id; render(); });
 
   $('cell-select').addEventListener('change', (ev) => { state.cell = ev.target.value; render(); });
+
+  checkGroup($('tail-options'), [{ id: 'tail', label: 'Include inductive tail' }], [],
+    (ids) => { state.tail = ids.includes('tail'); render(); });
   applyView();
 }
 
@@ -162,6 +166,7 @@ function applyView() {
   $('x-group').hidden = nyquist;
   $('quantity-group').hidden = nyquist;
   $('cell-group').hidden = !nyquist;
+  $('tail-group').hidden = !nyquist;
   $('ramp').hidden = !nyquist;
   $('chart').setAttribute('aria-label', nyquist
     ? 'Nyquist plot of the impedance spectra of one cell, one curve per check-up. A table with the resistances of the cell follows the chart.'
@@ -281,7 +286,7 @@ async function renderNyquist(cid, narrow, token) {
       customdata: s.f.map((f) => [s.cu, f, manual]),
       line: { color: rampColor(s.cu), width: 1.5 },
       marker: { color: rampColor(s.cu), size: 4 },
-      hovertemplate: '<b>%{customdata[1]} Hz</b><br>Re %{x:.2f} · Im %{y:.2f} mΩ<br>check-up %{customdata[0]}%{customdata[2]}<extra></extra>',
+      hovertemplate: '<b>%{customdata[1]} Hz</b><br>Re %{x:.2f} · −Im %{y:.2f} mΩ<br>check-up %{customdata[0]}%{customdata[2]}<extra></extra>',
       hoverlabel: hoverLabel(rampColor(s.cu)),
     });
     const e = entryOf(cid, s.cu, state.soc, state.meas);
@@ -300,7 +305,7 @@ async function renderNyquist(cid, narrow, token) {
   if (r0Pts.x.length) {
     traces.push({
       type: 'scatter', mode: 'markers', name: 'R0 (real-axis crossing)',
-      x: r0Pts.x, y: r0Pts.y, text: r0Pts.text,
+      x: r0Pts.x, y: r0Pts.y, text: r0Pts.text, cliponaxis: false,
       marker: { symbol: 'diamond', size: 9, color: ink, line: { color: surface, width: 2 } },
       hovertemplate: '%{text}<extra></extra>',
       hoverlabel: hoverLabel(ink),
@@ -328,10 +333,10 @@ async function renderNyquist(cid, narrow, token) {
     showlegend: true,
     legend: { orientation: 'h', x: 0, y: -0.2, font: { color: ink2, family: FONT, size: 12 } },
     xaxis: { title: { text: 'Re(Z) (mΩ)', standoff: 10 }, ...axisStyle() },
-    yaxis: { title: { text: 'Im(Z) (mΩ)', standoff: 8 }, scaleanchor: 'x', scaleratio: 1, ...axisStyle() },
+    yaxis: nyquistYAxis(state.tail),
     annotations,
   };
-  await drawChart(traces, layout);
+  await drawNyquist(traces, layout);
   return shown;
 }
 

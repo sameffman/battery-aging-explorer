@@ -58,7 +58,7 @@
       <li><strong>Equivalent full cycles (EFC)</strong> are the mean of the total charged and discharged throughput divided by 3.0 Ah, as defined in the dataset readme. Calendar-aged cells only accumulate throughput during check-ups, so time is the meaningful axis for them.</li>
       <li><strong>Capacity recovery before CU 24:</strong> one of the three cells of each calendar condition above 10% SoC, the one with intermediate losses, was held at 10% SoC at its aging temperature for about 2.5 days just before CU 24. The nine of these cells that completed CU 24 regained part of their lost capacity, which appears as an upward step at CU 24, largest for cells aged at 90 and 100% SoC (for example P011-3: 2.667 Ah at CU 23, 2.688 Ah at CU 24). Most of the recovered capacity is lost again by CU 25.</li>
       <li><strong>Early shutoff:</strong> cells P012-1, P015-3 and P016-1 shut off at CU 24 and have no capacity after CU 23.</li>
-      <li><strong>Voltage windows</strong> are the target charge and discharge voltages of the cycling profile. The cycler applies voltage limits; the authors relate them to state-of-charge ranges of approximately 0–100%, 10–100% and 10–90%.</li>
+      <li><strong>Voltage windows</strong> apply to cyclic aging and are the target charge and discharge voltages of the cycles; the authors relate them to state-of-charge ranges of approximately 0–100%, 10–100% and 10–90%.</li>
       <li>A check-up with a missing discharge capacity is skipped, and the line connects the neighboring check-ups.</li>
     </ul>
   </details>
@@ -234,8 +234,8 @@ function renderTable(cells) {
     return [
       cid,
       capacity[cid].q_ref.Ah.toFixed(3),
-      eol && eol.efc != null ? String(eol.efc) : '–',
-      eol && eol.days != null ? String(eol.days) : '–',
+      eol && eol.efc != null ? eol.efc.toFixed(0) : '–',
+      eol && eol.days != null ? eol.days.toFixed(1) : '–',
       ...cuNumbers.map((n) => (byCu.get(n) != null ? byCu.get(n).toFixed(3) : '–')),
     ];
   });
